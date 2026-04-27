@@ -61,7 +61,16 @@ Therapy and unit context:
 
 ## Current Label Policy
 
-For the first baseline sanity checks, labeled rows can be filtered to
-`sepsis in {0, 1}`. Before final modeling, the team should decide whether
-`NaN` labels represent unlabeled horizons, censored examples, or values that
-should be derived from patient-level onset information.
+Treat `sepsis == NaN` rows as structural padding/no-observation rows. Do not
+statistically impute `sepsis`, and do not convert label NaNs to `0`.
+
+Derive stay-level outcome from observed labels only:
+
+```text
+stay_has_sepsis = max(observed sepsis values for the stay)
+```
+
+This policy is recorded in `docs/decisions/0002-sepsis-label-nan-policy.md`.
+
+Clinical feature columns may still be imputed during preprocessing, but label
+columns must not be statistically imputed.

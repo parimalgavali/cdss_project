@@ -22,6 +22,7 @@ classical baselines.
 
 ```text
 .
+├── AGENTS.md              # Instructions for future coding-agent sessions
 ├── docs/                  # Project notes and data contracts
 ├── notebooks/             # Exploratory analysis notebooks
 ├── scripts/               # Command-line utilities
@@ -29,6 +30,18 @@ classical baselines.
 ├── tests/                 # Automated tests
 └── requirements.txt       # Python dependencies
 ```
+
+## Project Memory
+
+Future sessions should start with:
+
+```text
+docs/project_memory.md
+docs/decisions/README.md
+```
+
+These files record durable assumptions and decisions so project context is not
+lost when chat history is compacted or a new session begins.
 
 ## Local Setup
 
