@@ -53,9 +53,13 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Expected hour column in the actual CSV is `hour_before`, not `hours_before`.
 - `hour_before` ranges from `1` to `30`.
 - There are `28` duplicate `stay_id + hour_before` rows, all from one stay with
-  `58` rows.
+  `58` rows. Plan A inspection found these are exact duplicate rows for stay
+  `34934165`; exact duplicates may be dropped, while conflicting duplicates
+  must raise an error.
 - Rows with `sepsis == NaN` have zero non-missing clinical feature values in the
-  inspected CSV.
+  inspected CSV. Current count: `908,798` structural empty rows.
+- Stay-level outcomes derived from observed labels: `9,657` positive stays and
+  `47,383` negative stays.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -90,7 +94,5 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 - Confirm with the professor whether the provided CSV was derived from
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.
-- Confirm whether duplicate rows for stay `34934165` should use last-observed
-  row, most-complete row, or be excluded.
 - Decide whether to keep missingness masks as auxiliary features in addition to
   professor-style interpolation, or reserve them for a later sensitivity check.

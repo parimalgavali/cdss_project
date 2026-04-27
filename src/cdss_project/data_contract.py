@@ -6,41 +6,11 @@ from typing import Any
 
 import pandas as pd
 
+from cdss_project.audit import derive_stay_outcomes, duplicate_summary, structural_empty_rows
+from cdss_project.features import FEATURE_COLUMNS, REQUIRED_COLUMNS
+
 
 DATASET_PATH = Path("data/mimic_sepsis_onset_prediction.csv")
-
-REQUIRED_COLUMNS: tuple[str, ...] = (
-    "stay_id",
-    "hour_before",
-    "gender",
-    "ethnicity",
-    "admission_age",
-    "height",
-    "weight",
-    "diabetes",
-    "platelet",
-    "leukocytes",
-    "po2",
-    "fio2",
-    "lactate",
-    "creatinine",
-    "bilirubin_total",
-    "gcs",
-    "crp",
-    "sofa_24hours",
-    "dbp",
-    "glucose",
-    "heart_rate",
-    "mbp",
-    "resp_rate",
-    "sbp",
-    "temperature",
-    "spo2",
-    "urineoutput",
-    "ventilation_status",
-    "last_careunit",
-    "sepsis",
-)
 
 
 @dataclass(frozen=True)
@@ -58,6 +28,11 @@ class DataContractSummary:
     hour_before_max: int | None = None
     sepsis_counts: dict[Any, int] = field(default_factory=dict)
     sepsis_nan_count: int = 0
+    duplicate_stay_hour_row_count: int = 0
+    duplicate_stay_hour_group_count: int = 0
+    structural_empty_row_count: int = 0
+    stay_positive_count: int = 0
+    stay_negative_count: int = 0
     stay_rows_summary: dict[str, float] = field(default_factory=dict)
     issues: list[ValidationIssue] = field(default_factory=list)
 
@@ -98,6 +73,26 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
     sepsis_counts: dict[Any, int] = {}
     sepsis_nan_count = 0
     stay_rows_summary: dict[str, float] = {}
+    duplicate_stay_hour_row_count = 0
+    duplicate_stay_hour_group_count = 0
+    structural_empty_row_count = 0
+    stay_positive_count = 0
+    stay_negative_count = 0
+
+    if {"stay_id", "hour_before"}.issubset(frame.columns):
+        duplicates = duplicate_summary(frame)
+        duplicate_stay_hour_row_count = duplicates.duplicate_row_count
+        duplicate_stay_hour_group_count = duplicates.duplicate_group_count
+        if duplicate_stay_hour_row_count:
+            issues.append(
+                ValidationIssue(
+                    severity="warning",
+                    message=(
+                        f"{duplicate_stay_hour_row_count} rows belong to "
+                        f"{duplicate_stay_hour_group_count} duplicate stay-hour groups"
+                    ),
+                )
+            )
 
     if "hour_before" in frame.columns:
         invalid_hours = frame["hour_before"].dropna()
@@ -148,11 +143,20 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
                 ValidationIssue(
                     severity="warning",
                     message=(
-                        f"{sepsis_nan_count} rows have NaN sepsis labels; decide whether "
-                        "to filter, derive, or otherwise handle them before modeling"
+                        f"{sepsis_nan_count} rows have NaN sepsis labels; current policy "
+                        "treats rows with no clinical feature values as structural padding"
                     ),
                 )
             )
+        structural_empty_row_count = int(
+            structural_empty_rows(frame, feature_columns=FEATURE_COLUMNS).sum()
+        )
+        try:
+            stay_outcomes = derive_stay_outcomes(frame)
+            stay_positive_count = int(stay_outcomes["stay_has_sepsis"].sum())
+            stay_negative_count = int(len(stay_outcomes) - stay_positive_count)
+        except ValueError as error:
+            issues.append(ValidationIssue(severity="error", message=str(error)))
 
     return DataContractSummary(
         row_count=len(frame),
@@ -162,6 +166,11 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
         hour_before_max=hour_max,
         sepsis_counts=sepsis_counts,
         sepsis_nan_count=sepsis_nan_count,
+        duplicate_stay_hour_row_count=duplicate_stay_hour_row_count,
+        duplicate_stay_hour_group_count=duplicate_stay_hour_group_count,
+        structural_empty_row_count=structural_empty_row_count,
+        stay_positive_count=stay_positive_count,
+        stay_negative_count=stay_negative_count,
         stay_rows_summary=stay_rows_summary,
         issues=issues,
     )
@@ -193,6 +202,17 @@ def format_summary(summary: DataContractSummary) -> str:
         )
         lines.append(f"Sepsis label counts: {counts}")
     lines.append(f"NaN sepsis labels: {summary.sepsis_nan_count}")
+    lines.append(f"Structural empty rows: {summary.structural_empty_row_count}")
+    lines.append(
+        "Duplicate stay-hour rows: "
+        f"{summary.duplicate_stay_hour_row_count} "
+        f"across {summary.duplicate_stay_hour_group_count} groups"
+    )
+    if summary.stay_positive_count or summary.stay_negative_count:
+        lines.append(
+            "Stay-level outcomes: "
+            f"positive={summary.stay_positive_count}, negative={summary.stay_negative_count}"
+        )
 
     if summary.issues:
         lines.extend(["", "Issues:"])

@@ -101,6 +101,24 @@ def test_inspect_dataframe_warns_when_stays_do_not_have_30_hourly_rows():
     )
 
 
+def test_inspect_dataframe_reports_duplicate_structural_and_stay_label_counts():
+    frame = make_valid_frame()
+    frame = pd.concat([frame, frame.iloc[[0]]], ignore_index=True)
+    frame.loc[0, "sepsis"] = pd.NA
+    for column in REQUIRED_COLUMNS:
+        if column not in {"stay_id", "hour_before", "sepsis"}:
+            frame.loc[0, column] = pd.NA
+    frame.loc[30:59, "sepsis"] = 1.0
+
+    summary = inspect_dataframe(frame)
+
+    assert summary.duplicate_stay_hour_row_count == 2
+    assert summary.duplicate_stay_hour_group_count == 1
+    assert summary.structural_empty_row_count == 1
+    assert summary.stay_positive_count == 1
+    assert summary.stay_negative_count == 1
+
+
 def test_validate_csv_path_rejects_missing_file(tmp_path: Path):
     with pytest.raises(FileNotFoundError, match="Dataset not found"):
         validate_csv_path(tmp_path / "missing.csv")

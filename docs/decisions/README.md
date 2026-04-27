@@ -15,3 +15,4 @@ When a future session makes a meaningful project choice:
 - `0001-repository-continuity-and-hygiene.md`
 - `0002-sepsis-label-nan-policy.md`
 - `0003-preprocessing-direction.md`
+- `0004-data-audit-and-duplicate-policy.md`
