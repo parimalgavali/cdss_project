@@ -26,6 +26,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 - Keep `data/` out of Git.
 - Keep generated artifacts out of Git unless explicitly requested.
+- Keep professor-provided/reference PDFs local unless the user explicitly
+  approves publishing them.
 - Use scripts plus notebooks: reusable logic in `src/`, notebooks for
   exploration and figures.
 - Use `venv + requirements.txt` as the first environment approach.
@@ -35,12 +37,14 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   unknown clinical outcome and not as a value to statistically impute.
 - Derive stay-level sepsis outcome from observed labels only:
   `stay_has_sepsis = max(observed sepsis)`.
-- Clinical feature columns can be imputed, but label columns must not be
-  statistically imputed.
-- Preserve missingness signal for clinical features using observed-value masks
-  and, where useful, time-since-last-observed features.
-- Fit imputation/scaling/encoding statistics on training stays only to avoid
-  data leakage.
+- For clinical feature columns, follow the professor's 2025 paper as the
+  primary preprocessing style: aggregate to 1-hour windows, keep the most recent
+  measurement when multiple values occur in an hour, linearly interpolate
+  missing values within each patient's time series, and replace features that
+  are entirely missing for a patient with a global training-set mean.
+- Label columns must not be statistically imputed.
+- Fit global imputation, scaling, and encoding statistics on training stays
+  only to avoid train/test leakage.
 
 ## Current Data Findings
 
@@ -67,10 +71,11 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 ### Milestone 2B: Preprocessing Transform
 
-- Add observed-value masks for clinical features.
-- Add time-since-last-observed features where appropriate.
-- Impute clinical features without future leakage.
-- Fit train-only preprocessing statistics.
+- Implement professor-style clinical feature imputation:
+  patient-level linear interpolation plus train-set global mean fallback for
+  features entirely missing within a patient.
+- Fit train-only preprocessing statistics before transforming validation/test
+  stays.
 - Produce a clean hourly table ready for sliding windows.
 
 ### Later Milestones
@@ -87,5 +92,5 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.
 - Confirm whether duplicate rows for stay `34934165` should use last-observed
   row, most-complete row, or be excluded.
-- Decide whether very sparse lab features should all be retained with masks or
-  whether some should be excluded for baseline models.
+- Decide whether to keep missingness masks as auxiliary features in addition to
+  professor-style interpolation, or reserve them for a later sensitivity check.

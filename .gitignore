@@ -7,6 +7,9 @@ models/
 outputs/
 reports/figures/
 
+# Local reference papers not approved for sharing
+docs/Sepsis_Paper_2025_by_Prof.pdf
+
 # Python environments and caches
 .venv/
 venv/
