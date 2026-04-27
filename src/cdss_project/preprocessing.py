@@ -30,6 +30,11 @@ class PreprocessingDryRunSummary:
     stay_negative_count: int
 
 
+@dataclass(frozen=True)
+class PreprocessingWriteSummary(PreprocessingDryRunSummary):
+    output_path: Path
+
+
 def split_stay_ids(
     frame: pd.DataFrame,
     *,
@@ -100,6 +105,22 @@ def transform_with_professor_imputation(
     return transformed.loc[original_order].reset_index(drop=True)
 
 
+def preprocess_to_dataframe(
+    frame: pd.DataFrame,
+    *,
+    feature_means: Mapping[str, float],
+    feature_columns: Sequence[str] = FEATURE_COLUMNS,
+) -> pd.DataFrame:
+    deduplicated = deduplicate_exact_stay_hours(frame)
+    transformed = transform_with_professor_imputation(
+        deduplicated,
+        feature_means=feature_means,
+        feature_columns=feature_columns,
+    )
+    outcomes = derive_stay_outcomes(transformed)
+    return transformed.merge(outcomes, on="stay_id", how="left", validate="many_to_one")
+
+
 def run_preprocessing_dry_run(
     csv_path: Path,
     *,
@@ -114,7 +135,7 @@ def run_preprocessing_dry_run(
 
     means = fit_feature_means(train, feature_columns=feature_columns)
     missing_before = int(deduplicated[list(feature_columns)].isna().sum().sum())
-    transformed = transform_with_professor_imputation(
+    transformed = preprocess_to_dataframe(
         deduplicated,
         feature_means=means,
         feature_columns=feature_columns,
@@ -137,23 +158,79 @@ def run_preprocessing_dry_run(
     )
 
 
-def format_dry_run_summary(summary: PreprocessingDryRunSummary) -> str:
-    return "\n".join(
-        [
-            "Preprocessing dry run",
-            "=====================",
-            f"Rows after deduplication: {summary.row_count}",
-            f"Unique stays: {summary.stay_count}",
-            f"Train stays: {summary.train_stay_count}",
-            f"Test stays: {summary.test_stay_count}",
-            f"Feature columns imputed: {summary.feature_count}",
-            f"Missing feature values before: {summary.missing_before}",
-            f"Missing feature values after: {summary.missing_after}",
-            (
-                "Stay-level outcomes: "
-                f"positive={summary.stay_positive_count}, "
-                f"negative={summary.stay_negative_count}"
-            ),
-            "No output files were written.",
-        ]
+def write_preprocessed_csv(
+    csv_path: Path,
+    output_path: Path,
+    *,
+    test_size: float = 0.2,
+    random_state: int = 42,
+    feature_columns: Sequence[str] = FEATURE_COLUMNS,
+    overwrite: bool = False,
+) -> PreprocessingWriteSummary:
+    if output_path.exists() and not overwrite:
+        raise FileExistsError(
+            f"Output file already exists: {output_path}. Use overwrite=True to replace it."
+        )
+
+    frame = pd.read_csv(csv_path)
+    deduplicated = deduplicate_exact_stay_hours(frame)
+    split = split_stay_ids(deduplicated, test_size=test_size, random_state=random_state)
+    train = deduplicated[deduplicated["stay_id"].isin(split.train_stay_ids)]
+
+    means = fit_feature_means(train, feature_columns=feature_columns)
+    missing_before = int(deduplicated[list(feature_columns)].isna().sum().sum())
+    processed = preprocess_to_dataframe(
+        deduplicated,
+        feature_means=means,
+        feature_columns=feature_columns,
     )
+    missing_after = int(processed[list(feature_columns)].isna().sum().sum())
+    stay_positive_count = int(processed.drop_duplicates("stay_id")["stay_has_sepsis"].sum())
+    stay_negative_count = int(processed["stay_id"].nunique() - stay_positive_count)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    processed.to_csv(output_path, index=False)
+
+    return PreprocessingWriteSummary(
+        row_count=len(processed),
+        stay_count=int(processed["stay_id"].nunique()),
+        train_stay_count=len(split.train_stay_ids),
+        test_stay_count=len(split.test_stay_ids),
+        feature_count=len(feature_columns),
+        missing_before=missing_before,
+        missing_after=missing_after,
+        stay_positive_count=stay_positive_count,
+        stay_negative_count=stay_negative_count,
+        output_path=output_path,
+    )
+
+
+def format_dry_run_summary(summary: PreprocessingDryRunSummary) -> str:
+    lines = _summary_lines(summary, title="Preprocessing dry run")
+    lines.append("No output files were written.")
+    return "\n".join(lines)
+
+
+def format_write_summary(summary: PreprocessingWriteSummary) -> str:
+    lines = _summary_lines(summary, title="Preprocessing output")
+    lines.append(f"Output file: {summary.output_path}")
+    return "\n".join(lines)
+
+
+def _summary_lines(summary: PreprocessingDryRunSummary, *, title: str) -> list[str]:
+    return [
+        title,
+        "=" * len(title),
+        f"Rows after deduplication: {summary.row_count}",
+        f"Unique stays: {summary.stay_count}",
+        f"Train stays: {summary.train_stay_count}",
+        f"Test stays: {summary.test_stay_count}",
+        f"Feature columns imputed: {summary.feature_count}",
+        f"Missing feature values before: {summary.missing_before}",
+        f"Missing feature values after: {summary.missing_after}",
+        (
+            "Stay-level outcomes: "
+            f"positive={summary.stay_positive_count}, "
+            f"negative={summary.stay_negative_count}"
+        ),
+    ]

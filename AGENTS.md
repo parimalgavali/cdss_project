@@ -28,6 +28,10 @@ If yes, update `docs/project_memory.md` and add or amend a decision record in
 `docs/decisions/` before committing. If no, the commit message or final summary
 should still mention that no project-memory update was needed.
 
+After completing each project milestone, create or update a separate Markdown
+summary under `docs/milestones/`. The milestone summary should explain what was
+done, why it was done, how to run or verify it, and what remains out of scope.
+
 ## Superpowers Workflow Requirement
 
 When using the Superpowers plugin, invoke the relevant Superpowers skill for the

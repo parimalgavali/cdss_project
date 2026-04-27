@@ -71,6 +71,21 @@ python scripts/inspect_data.py
 The script checks the expected columns, stay/hour structure, `hour_before`
 range, and reports `NaN` labels in `sepsis` explicitly.
 
+Run the preprocessing dry run:
+
+```bash
+python scripts/preprocess_data.py --dry-run
+```
+
+Create a separate processed CSV copy without modifying the original:
+
+```bash
+python scripts/preprocess_data.py
+```
+
+The generated file is written to `data/processed/mimic_sepsis_preprocessed.csv`
+and remains ignored by Git.
+
 ## Planned Milestones
 
 1. Scaffold, data contract, and validation.

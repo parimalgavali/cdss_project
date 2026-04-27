@@ -10,7 +10,14 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from cdss_project.data_contract import DATASET_PATH
-from cdss_project.preprocessing import format_dry_run_summary, run_preprocessing_dry_run
+from cdss_project.preprocessing import (
+    format_dry_run_summary,
+    format_write_summary,
+    run_preprocessing_dry_run,
+    write_preprocessed_csv,
+)
+
+DEFAULT_OUTPUT_PATH = Path("data/processed/mimic_sepsis_preprocessed.csv")
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,6 +33,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Validate and summarize preprocessing without writing output files.",
     )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_OUTPUT_PATH,
+        help=f"Processed CSV output path. Default: {DEFAULT_OUTPUT_PATH}",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace the output file if it already exists.",
+    )
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
     return parser.parse_args()
@@ -33,16 +51,28 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if not args.dry_run:
-        print("Only --dry-run is supported for now; no output files were written.", file=sys.stderr)
+    if args.dry_run:
+        summary = run_preprocessing_dry_run(
+            args.csv,
+            test_size=args.test_size,
+            random_state=args.random_state,
+        )
+        print(format_dry_run_summary(summary))
+        return 0
+
+    try:
+        summary = write_preprocessed_csv(
+            args.csv,
+            args.output,
+            test_size=args.test_size,
+            random_state=args.random_state,
+            overwrite=args.overwrite,
+        )
+    except FileExistsError as error:
+        print(str(error), file=sys.stderr)
         return 2
 
-    summary = run_preprocessing_dry_run(
-        args.csv,
-        test_size=args.test_size,
-        random_state=args.random_state,
-    )
-    print(format_dry_run_summary(summary))
+    print(format_write_summary(summary))
     return 0
 
 

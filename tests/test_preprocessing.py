@@ -2,8 +2,10 @@ import pandas as pd
 
 from cdss_project.preprocessing import (
     fit_feature_means,
+    preprocess_to_dataframe,
     split_stay_ids,
     transform_with_professor_imputation,
+    write_preprocessed_csv,
 )
 
 
@@ -83,3 +85,53 @@ def test_transform_does_not_fit_new_means_from_validation_data():
     )
 
     assert transformed["glucose"].tolist() == [123.0, 123.0]
+
+
+def test_preprocess_to_dataframe_preserves_sepsis_and_adds_stay_labels():
+    frame = pd.DataFrame(
+        {
+            "stay_id": [1, 1, 1, 2, 2],
+            "hour_before": [1, 2, 3, 1, 2],
+            "heart_rate": [80.0, pd.NA, 100.0, pd.NA, pd.NA],
+            "sepsis": [0.0, pd.NA, 0.0, 1.0, pd.NA],
+        }
+    )
+
+    processed = preprocess_to_dataframe(
+        frame,
+        feature_means={"heart_rate": 70.0},
+        feature_columns=["heart_rate"],
+    )
+
+    assert processed["heart_rate"].tolist() == [80.0, 90.0, 100.0, 70.0, 70.0]
+    assert processed["sepsis"].isna().sum() == 2
+    assert processed.loc[processed["stay_id"] == 1, "stay_has_sepsis"].unique().tolist() == [0]
+    assert processed.loc[processed["stay_id"] == 2, "stay_has_sepsis"].unique().tolist() == [1]
+
+
+def test_write_preprocessed_csv_creates_output_without_modifying_input(tmp_path):
+    input_path = tmp_path / "raw.csv"
+    output_path = tmp_path / "processed" / "preprocessed.csv"
+    raw = pd.DataFrame(
+        {
+            "stay_id": [1, 1, 1, 2, 2, 2],
+            "hour_before": [1, 2, 3, 1, 2, 3],
+            "heart_rate": [80.0, pd.NA, 100.0, 70.0, pd.NA, 90.0],
+            "sepsis": [0.0, pd.NA, 0.0, 1.0, pd.NA, 1.0],
+        }
+    )
+    raw.to_csv(input_path, index=False)
+
+    summary = write_preprocessed_csv(
+        input_path,
+        output_path,
+        feature_columns=["heart_rate"],
+        overwrite=False,
+    )
+
+    assert input_path.read_text() == raw.to_csv(index=False)
+    written = pd.read_csv(output_path)
+    assert written["heart_rate"].tolist() == [80.0, 90.0, 100.0, 70.0, 80.0, 90.0]
+    assert "stay_has_sepsis" in written.columns
+    assert summary.output_path == output_path
+    assert summary.row_count == 6

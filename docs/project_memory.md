@@ -65,6 +65,11 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Professor-style preprocessing dry run deduplicates to `1,711,200` rows,
   imputes `27` feature columns, and reduces missing feature values from
   `34,516,021` to `0` without writing output files.
+- Preprocessing can now write a generated processed copy to
+  `data/processed/mimic_sepsis_preprocessed.csv`. The original CSV is never
+  overwritten. The generated processed copy has `1,711,200` rows, `57,040`
+  stays, no duplicate `stay_id + hour_before` rows, and derived
+  `stay_has_sepsis` / `observed_label_count` columns.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -87,8 +92,14 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Fit train-only preprocessing statistics before transforming validation/test
   stays.
 - Produce a clean hourly table ready for sliding windows.
-- Status: implemented as a dry-run preprocessing pipeline; generated datasets
-  are not written yet.
+- Status: implemented as a dry-run pipeline and as an output-writing pipeline
+  that creates a separate processed CSV under `data/processed/`.
+
+### Milestone Documentation
+
+- Each completed milestone should get its own Markdown summary under
+  `docs/milestones/`.
+- Current milestone summary: `docs/milestones/0001-preprocessing.md`.
 
 ### Later Milestones
 
