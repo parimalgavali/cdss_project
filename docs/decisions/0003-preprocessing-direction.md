@@ -16,8 +16,9 @@ preprocessing style:
 - when multiple values occur within the same patient-hour-feature, keep the
   most recent measurement;
 - linearly interpolate missing values within each patient's time series;
-- replace features entirely missing for a patient with a global training-set
-  mean.
+- replace remaining missing values with a global training-set mean. This
+  includes leading/trailing missing values and features entirely missing for a
+  patient.
 
 Fit global imputation, scaling, and encoding statistics on training stays only.
 Do not statistically impute labels.
@@ -39,7 +40,8 @@ a strict real-time deployment pipeline.
 ## Consequences
 
 - Start with professor-style interpolation and train-set mean fallback for
-  clinical feature columns.
+  clinical feature columns. Interpolation handles internal gaps; train-set means
+  handle leading/trailing gaps and entirely missing patient-feature series.
 - Keep the `sepsis` label policy separate: do not impute `sepsis` NaNs.
 - Use training-set global means for fallback values to avoid train/test leakage.
 - Consider missingness masks or forward-fill variants only as later sensitivity

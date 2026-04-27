@@ -41,7 +41,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   primary preprocessing style: aggregate to 1-hour windows, keep the most recent
   measurement when multiple values occur in an hour, linearly interpolate
   missing values within each patient's time series, and replace features that
-  are entirely missing for a patient with a global training-set mean.
+  remain missing after interpolation with a global training-set mean. This
+  covers leading/trailing missing values and features entirely missing for a
+  patient.
 - Label columns must not be statistically imputed.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
@@ -60,6 +62,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   inspected CSV. Current count: `908,798` structural empty rows.
 - Stay-level outcomes derived from observed labels: `9,657` positive stays and
   `47,383` negative stays.
+- Professor-style preprocessing dry run deduplicates to `1,711,200` rows,
+  imputes `27` feature columns, and reduces missing feature values from
+  `34,516,021` to `0` without writing output files.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -77,10 +82,13 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 - Implement professor-style clinical feature imputation:
   patient-level linear interpolation plus train-set global mean fallback for
-  features entirely missing within a patient.
+  leading/trailing missing values and features entirely missing within a
+  patient.
 - Fit train-only preprocessing statistics before transforming validation/test
   stays.
 - Produce a clean hourly table ready for sliding windows.
+- Status: implemented as a dry-run preprocessing pipeline; generated datasets
+  are not written yet.
 
 ### Later Milestones
 
