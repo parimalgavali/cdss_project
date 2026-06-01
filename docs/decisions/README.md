@@ -16,3 +16,6 @@ When a future session makes a meaningful project choice:
 - `0002-sepsis-label-nan-policy.md`
 - `0003-preprocessing-direction.md`
 - `0004-data-audit-and-duplicate-policy.md`
+- `0005-windowing-direction.md`
+- `0006-per-hour-modeling-evaluation.md`
+- `0007-runtime-hardware-and-mps.md`

@@ -47,6 +47,17 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Label columns must not be statistically imputed.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
+- Build windowed modeling inputs from the processed CSV, not from the original
+  raw CSV.
+- For local neural model training on the user's Apple M1 laptop, prefer
+  PyTorch's Apple Metal/MPS backend when available, then CUDA if present, then
+  CPU as the fallback.
+- Use fixed 6-hour sliding windows as the primary windowing baseline, fixed
+  3-hour windows as a shorter-context comparison, and expanding windows as the
+  professor-requested all-history comparison.
+- Window chronology follows `hour_before` descending from `30` to `1`.
+- Use `stay_has_sepsis` as the v1 window label. Keep the original `sepsis`
+  column unchanged.
 
 ## Current Data Findings
 
@@ -72,6 +83,18 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   `stay_has_sepsis` / `observed_label_count` columns.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
+- Windowing dry runs against the processed CSV produced:
+  - fixed 6-hour windows: `1,426,000` windows, positive=`241,425`,
+    negative=`1,184,575`;
+  - fixed 3-hour windows: `1,597,120` windows, positive=`270,396`,
+    negative=`1,326,724`;
+  - expanding windows from 3 hours: `1,597,120` windows, positive=`270,396`,
+    negative=`1,326,724`.
+- Window feature arrays are saved as `float32` tensors to reduce memory usage
+  and match common ML framework input types.
+- Per-hour padded window dry runs against the processed CSV produced one window
+  per patient-hour for each method: `1,711,200` windows with positive=`289,710`
+  and negative=`1,421,490`.
 
 ## Next Milestones
 
@@ -103,11 +126,21 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 ### Later Milestones
 
-- Build 6-hour sliding windows and horizon labels.
-- Build Logistic Regression and Random Forest baselines.
-- Build PyTorch LSTM and GRU models.
-- Evaluate AUROC, AUPRC, F1, sensitivity, specificity, and Early Detection
-  Advantage.
+- Implement per-hour padded window generation for fixed 3-hour, fixed 6-hour,
+  and expanding windows starting from the first available hour.
+- Train Logistic Regression, Random Forest, LSTM, and GRU across the three
+  per-hour windowing techniques.
+- Evaluate overall and per-hour AUROC, AUPRC, F1, precision, sensitivity,
+  specificity, accuracy, and confusion-matrix values.
+- Generate professor-facing comparison tables and plots under
+  `outputs/experiments/`.
+- Current plan file:
+  `docs/milestones/0003-modeling-and-evaluation-plan.md`.
+- Current implementation includes `scripts/run_experiments.py` for model
+  training and `scripts/summarize_experiments.py` for comparison tables/plots.
+- Full expanding-window training is memory-heavy on the user's 8GB Apple M1
+  laptop. If local runs are killed, run the same committed code on stronger
+  approved hardware while keeping the dataset local and out of Git.
 
 ## Open Questions
 

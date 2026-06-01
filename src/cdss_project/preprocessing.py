@@ -75,7 +75,7 @@ def fit_feature_means(
     return means
 
 
-def transform_with_professor_imputation(
+def transform_imputation(
     frame: pd.DataFrame,
     *,
     feature_means: Mapping[str, float],
@@ -105,6 +105,9 @@ def transform_with_professor_imputation(
     return transformed.loc[original_order].reset_index(drop=True)
 
 
+transform_with_professor_imputation = transform_imputation
+
+
 def preprocess_to_dataframe(
     frame: pd.DataFrame,
     *,
@@ -112,7 +115,7 @@ def preprocess_to_dataframe(
     feature_columns: Sequence[str] = FEATURE_COLUMNS,
 ) -> pd.DataFrame:
     deduplicated = deduplicate_exact_stay_hours(frame)
-    transformed = transform_with_professor_imputation(
+    transformed = transform_imputation(
         deduplicated,
         feature_means=feature_means,
         feature_columns=feature_columns,
