@@ -47,6 +47,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Label columns must not be statistically imputed.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
+- Keep the repository threat model in `SECURITY_MODEL.md` and update it when
+  the attack surface changes (new dependencies, model loading, deployment).
 
 ## Current Data Findings
 
