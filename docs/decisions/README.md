@@ -25,3 +25,4 @@ When a future session makes a meaningful project choice:
 - `0011-explanations-and-model-persistence.md`
 - `0012-cv-runner-and-synthetic-data.md`
 - `0013-missingness-shortcut-and-control-model.md`
+- `0014-observed-window-evaluation-and-ethnicity-artifact.md`

@@ -108,6 +108,10 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   horizon 1. On fully observed windows only (39% of windows, 189 of 1,931
   positive stays, prevalence 1.4%) fold-0 RF drops to AUROC 0.850 / AUPRC
   0.188. Compare every model against `missingness_only`.
+- Fold 0 RNNs (decision `0014`): LSTM AUROC 0.914 / GRU 0.916 on all windows,
+  0.766 / 0.745 on fully observed windows; both early-stop at epoch 1; EDA vs
+  RF about 0 h. Ethnicity code `1` (9,794 stays) has zero positive stays and is
+  the top explanation feature: a cohort artifact.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -204,6 +208,12 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   (`--models miss`) is a Logistic Regression on those flags and runs by
   default in `run_cv.py`.
 
+### Observed-Window Evaluation
+
+- Decision `0014`: `summarize_results.py --min-observed-hours 6` (default)
+  rescores saved predictions on fully observed windows with each model's
+  threshold and adds that table to `results.md`.
+
 ### Remaining Work
 
 - Run the full 5-fold pipeline on the real CSV (`python scripts/run_cv.py`),
@@ -223,5 +233,7 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   (decision `0013`). Ask the professor whether the CSV is aligned to onset and
   whether to restrict the analysis (fully observed windows, or stays with
   enough recorded hours) for the main results.
+- Ethnicity code `1` has no sepsis-positive stays (decision `0014`): drop the
+  feature, drop those stays, or keep both as-is?
 - Confirm whether categorical columns in the real CSV are numeric codes or
   text (the inspection report prints this).

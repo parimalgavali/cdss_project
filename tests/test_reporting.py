@@ -80,3 +80,35 @@ def test_markdown_report_contains_tables(results):
     assert "| lstm | 0.813 ± 0.009 |" in report
     assert "| random_forest | 0.717 |" in report
     assert "| lstm | random_forest | 3.00 ± 1.41 | 2 |" in report
+
+
+def test_observed_subset_metrics_use_saved_predictions_and_threshold(tmp_path):
+    from cdss_project.reporting import load_observed_subset_metrics, markdown_report
+
+    fold_dir = tmp_path / "baselines" / "test_fold_0"
+    fold_dir.mkdir(parents=True)
+    pd.DataFrame(
+        [{"model": "random_forest", "horizon": "all", "threshold": 0.5, "auroc": 0.99}]
+    ).to_csv(fold_dir / "metrics_by_horizon.csv", index=False)
+    pd.DataFrame(
+        {
+            "stay_id": [1, 1, 2, 2, 3, 3],
+            "horizon": [2, 1, 2, 1, 2, 1],
+            "y": [1, 1, 0, 0, 1, 0],
+            "score": [0.9, 0.2, 0.1, 0.6, 0.8, 0.3],
+            "observed_hours": [6, 2, 6, 6, 6, 1],
+        }
+    ).to_csv(fold_dir / "random_forest_predictions.csv.gz", index=False)
+
+    subset = load_observed_subset_metrics([tmp_path / "baselines"], 6)
+
+    overall = subset[subset["horizon"] == "all"].iloc[0]
+    assert overall["windows"] == 4 and overall["positives"] == 2
+    assert overall["threshold"] == 0.5
+    assert overall["sensitivity"] == pytest.approx(1.0)
+    assert overall["specificity"] == pytest.approx(0.5)
+    summary = summarize_across_folds(subset)
+    report = markdown_report(
+        summary, minimum_reliable_horizon(summary), observed_summary=summary, min_observed_hours=6
+    )
+    assert "## Windows with at least 6 recorded hours" in report

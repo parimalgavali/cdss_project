@@ -159,6 +159,7 @@ LSTM/GRU, optional explanations) and then the summary (decision `0012`):
 python scripts/run_cv.py --dry-run                 # print the commands only
 python scripts/run_cv.py --skip-rnn                # quick baselines-only pass
 python scripts/train_baselines.py --models miss     # missingness-only control (decision 0013)
+python scripts/summarize_results.py --overwrite      # adds fully-observed-window table (decision 0014)
 python scripts/run_cv.py --device cuda --explain   # full run with explanations
 python scripts/run_cv.py --resume                  # continue after an interruption
 ```

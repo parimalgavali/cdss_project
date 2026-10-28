@@ -10,8 +10,10 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from cdss_project.reporting import (
+    COUNT_METRICS,
     PLOT_METRICS,
     load_fold_tables,
+    load_observed_subset_metrics,
     markdown_report,
     minimum_reliable_horizon,
     plot_eda,
@@ -34,6 +36,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/summary"))
     parser.add_argument("--figures-dir", type=Path, default=Path("reports/figures"))
     parser.add_argument("--auroc-threshold", type=float, default=0.80)
+    parser.add_argument(
+        "--min-observed-hours",
+        type=int,
+        default=6,
+        help="Also score windows with at least this many recorded hours (0 disables).",
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
@@ -79,7 +87,36 @@ def main() -> int:
         eda_summary.to_csv(args.output_dir / "eda_mean_std.csv", index=False)
         figures.append(plot_eda(eda_summary, args.figures_dir / "eda_vs_baselines.png"))
         print(eda_summary.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
-    report = markdown_report(summary, reliable, eda_summary, figures=figures)
+    observed_summary = observed_reliable = None
+    if args.min_observed_hours > 0:
+        observed = load_observed_subset_metrics(args.result_dirs, args.min_observed_hours)
+        if observed.empty:
+            print("No predictions with observed_hours found; observed-window summary skipped.")
+        else:
+            observed_summary = summarize_across_folds(
+                observed, metric_columns=(*COUNT_METRICS, *PLOT_METRICS)
+            )
+            observed_reliable = minimum_reliable_horizon(
+                observed_summary, threshold=args.auroc_threshold
+            )
+            suffix = f"observed_ge{args.min_observed_hours}"
+            observed_summary.to_csv(args.output_dir / f"metrics_mean_std_{suffix}.csv", index=False)
+            observed_reliable.to_csv(
+                args.output_dir / f"minimum_reliable_horizon_{suffix}.csv", index=False
+            )
+            figures.append(args.figures_dir / f"auroc_by_horizon_{suffix}.png")
+            plot_metric_by_horizon(
+                observed_summary, "auroc", figures[-1], reference_line=args.auroc_threshold
+            )
+    report = markdown_report(
+        summary,
+        reliable,
+        eda_summary,
+        figures=figures,
+        observed_summary=observed_summary,
+        observed_reliable=observed_reliable,
+        min_observed_hours=args.min_observed_hours,
+    )
     (args.output_dir / "results.md").write_text(report)
     print(f"Tables written to {args.output_dir}, figures to {args.figures_dir}")
     return 0
