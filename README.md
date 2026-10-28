@@ -53,6 +53,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Run the checks (GitHub Actions runs the same on every PR, via
+`.github/workflows/ci.yml`, using synthetic test data only):
+
+```bash
+pip install ruff
+ruff check .
+python -m pytest -q
+```
+
 The MIMIC-derived dataset should stay local and must not be committed to Git.
 Place it at:
 
