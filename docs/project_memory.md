@@ -21,6 +21,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Exploratory notebooks live in `notebooks/`.
 - Documentation lives in `docs/`.
 - Tests live in `tests/`.
+- CI: `.github/workflows/ci.yml` runs `ruff check .` + `pytest` (CPU torch) on
+  PRs and pushes to `main`; tests use synthetic data only (decision `0001`).
 
 ## Durable Decisions
 

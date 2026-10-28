@@ -26,3 +26,6 @@ explicitly changes that policy.
 - Important choices get their own file in `docs/decisions/`.
 - `AGENTS.md` instructs future coding agents to read these files first.
 - `.gitignore` remains part of the project hygiene contract.
+- Amendment (2026-10-28): GitHub Actions (`.github/workflows/ci.yml`) runs
+  `ruff check .` and `python -m pytest -q` on every PR and push to `main`, with
+  CPU-only PyTorch. Tests must stay synthetic: CI never has clinical data.
