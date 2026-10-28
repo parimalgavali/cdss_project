@@ -110,6 +110,15 @@ python scripts/train_baselines.py
 
 Results go to `outputs/baselines/test_fold_<k>/` (git-ignored).
 
+Train the LSTM and GRU models. Run this after the baselines, so Early
+Detection Advantage can be computed against them:
+
+```bash
+python scripts/train_rnn.py
+```
+
+Results go to `outputs/rnn/test_fold_<k>/` (git-ignored).
+
 ## Planned Milestones
 
 1. Scaffold, data contract, and validation.
