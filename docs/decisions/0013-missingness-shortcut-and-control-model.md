@@ -20,6 +20,14 @@ amount of recorded data, not the measurements, carries most of the label:
   With the first-crossing EDA rule, about 95% of positive stays alert at a
   mean of about 23.5 hours, so EDA saturates.
 - LSTM fold 0 stopped after 11 epochs with best epoch 1.
+- Fully observed windows (all 6 hours recorded) are 39% of fold-0 test
+  windows but cover only 189 of 1,931 positive stays (window prevalence 1.4%
+  vs 16.9% overall). On them, fold-0 baselines trained on all windows drop to
+  LR AUROC 0.743 / AUPRC 0.072 and RF 0.850 / 0.188. RF on these windows
+  improves towards horizon 1 (0.890 at h=25 with 10 positives, 0.840 at h=15,
+  0.866 at h=1), and the window's observed-hour count alone gives AUROC 0.810
+  over all windows. So some physiological signal remains, but most of the
+  headline score is the recording pattern.
 
 Likely cause (not confirmed): the CSV is aligned to onset, so positive stays
 have fewer recorded hours before the decision point. Professor-style imputation

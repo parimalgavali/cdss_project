@@ -105,7 +105,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   recorded/padding flags alone reaches stay-level AUROC 0.943 / AUPRC 0.793.
   Padding is scattered (49,860 stays start and 22,140 end with padding). Fold 0
   baselines: LR AUROC 0.910 / AUPRC 0.594, RF 0.920 / 0.636, both weakest at
-  horizon 1. Compare every model against `missingness_only`.
+  horizon 1. On fully observed windows only (39% of windows, 189 of 1,931
+  positive stays, prevalence 1.4%) fold-0 RF drops to AUROC 0.850 / AUPRC
+  0.188. Compare every model against `missingness_only`.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
