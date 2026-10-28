@@ -12,6 +12,7 @@ if str(SRC_ROOT) not in sys.path:
 from cdss_project.reporting import (
     PLOT_METRICS,
     load_fold_tables,
+    markdown_report,
     minimum_reliable_horizon,
     plot_eda,
     plot_metric_by_horizon,
@@ -53,7 +54,9 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     summary.to_csv(metrics_path, index=False)
     reliable.to_csv(args.output_dir / "minimum_reliable_horizon.csv", index=False)
+    figures = []
     for metric in PLOT_METRICS:
+        figures.append(args.figures_dir / f"{metric}_by_horizon.png")
         plot_metric_by_horizon(
             summary,
             metric,
@@ -68,13 +71,16 @@ def main() -> int:
     print(reliable.to_string(index=False))
 
     eda = load_fold_tables(args.result_dirs, "eda_vs_baselines.csv")
+    eda_summary = None
     if eda.empty:
         print("No eda_vs_baselines.csv found; EDA summary skipped.")
     else:
         eda_summary = summarize_eda(eda)
         eda_summary.to_csv(args.output_dir / "eda_mean_std.csv", index=False)
-        plot_eda(eda_summary, args.figures_dir / "eda_vs_baselines.png")
+        figures.append(plot_eda(eda_summary, args.figures_dir / "eda_vs_baselines.png"))
         print(eda_summary.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
+    report = markdown_report(summary, reliable, eda_summary, figures=figures)
+    (args.output_dir / "results.md").write_text(report)
     print(f"Tables written to {args.output_dir}, figures to {args.figures_dir}")
     return 0
 

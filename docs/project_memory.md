@@ -130,7 +130,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Milestone summaries: `docs/milestones/0001-preprocessing.md`,
   `docs/milestones/0002-windowing.md`, `docs/milestones/0003-baselines.md`,
   `docs/milestones/0004-rnn-models.md`,
-  `docs/milestones/0005-cross-fold-summary.md`.
+  `docs/milestones/0005-cross-fold-summary.md`,
+  `docs/milestones/0006-explanations-report.md`.
 
 ### Milestone 2: Sliding Windows
 
@@ -163,10 +164,19 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Minimum reliable horizon = the largest h with mean AUROC ≥ 0.80 at every
   horizon 1..h.
 
-### Later Milestones
+### Milestone 6: Explanations and Report
 
-- Optional TimeSHAP analysis (requires saving RNN weights, see decision
-  `0009`) and the written report.
+- Decision `0011`: `train_rnn.py --save-model` writes a state_dict + encoder
+  npz to `models/rnn/test_fold_<k>/`, loaded with `weights_only=True` and
+  `allow_pickle=False`.
+- `explain_rnn.py` computes TimeSHAP-style Shapley values (exact over the 6
+  hours, permutation-sampled over the 27 features, average-training-window
+  baseline) without the `timeshap` package.
+- `summarize_results.py` writes `outputs/summary/results.md` for the report.
+
+### Remaining Work
+
+- Run the full 5-fold pipeline on the real CSV, then write the report text.
 
 ## Open Questions
 

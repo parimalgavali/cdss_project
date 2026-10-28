@@ -65,3 +65,18 @@ def test_eda_summary_and_plots(results, tmp_path):
 
 def test_load_fold_tables_empty_when_nothing_found(tmp_path):
     assert load_fold_tables([tmp_path], "metrics_by_horizon.csv").empty
+
+
+def test_markdown_report_contains_tables(results):
+    from cdss_project.reporting import markdown_report
+
+    metrics = load_fold_tables([results / "baselines", results / "rnn"], "metrics_by_horizon.csv")
+    summary = summarize_across_folds(metrics)
+    eda = summarize_eda(load_fold_tables([results / "rnn"], "eda_vs_baselines.csv"))
+
+    report = markdown_report(summary, minimum_reliable_horizon(summary), eda)
+
+    assert "from 2 test fold(s)" in report
+    assert "| lstm | 0.813 ± 0.009 |" in report
+    assert "| random_forest | 0.717 |" in report
+    assert "| lstm | random_forest | 3.00 ± 1.41 | 2 |" in report

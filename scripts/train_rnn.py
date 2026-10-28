@@ -14,12 +14,13 @@ import pandas as pd
 
 from cdss_project.baselines import choose_validation_fold
 from cdss_project.evaluation import early_detection_advantage
-from cdss_project.rnn import CELL_TYPES, TrainConfig, run_rnn
+from cdss_project.rnn import CELL_TYPES, TrainConfig, run_rnn, save_rnn
 from cdss_project.windows import load_windows
 
 DEFAULT_WINDOWS_PATH = Path("data/processed/windows_w6.npz")
 DEFAULT_OUTPUT_DIR = Path("outputs/rnn")
 DEFAULT_BASELINE_DIR = Path("outputs/baselines")
+DEFAULT_MODEL_DIR = Path("models/rnn")
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,6 +54,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Pick the threshold reaching this validation sensitivity instead of max F1.",
     )
+    parser.add_argument(
+        "--save-model",
+        action="store_true",
+        help="Save state_dict + encoder to <model-dir>/test_fold_<k>/ (needed for explain_rnn.py).",
+    )
+    parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
@@ -102,6 +109,10 @@ def main() -> int:
         result.predictions.to_csv(run_dir / f"{result.model_name}_predictions.csv.gz", index=False)
         result.alerts.to_csv(run_dir / f"{result.model_name}_stay_alerts.csv", index=False)
         pd.DataFrame(result.history).to_csv(run_dir / f"{result.model_name}_history.csv", index=False)
+        if args.save_model:
+            model_dir = args.model_dir / f"test_fold_{test_fold}"
+            save_rnn(model_dir, result.model_name, result.model, result.encoder)
+            print(f"Saved {result.model_name} weights to {model_dir}")
 
     eda_rows = []
     baseline_run_dir = args.baseline_dir / f"test_fold_{test_fold}"
