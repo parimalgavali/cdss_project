@@ -119,6 +119,16 @@ python scripts/train_rnn.py
 
 Results go to `outputs/rnn/test_fold_<k>/` (git-ignored).
 
+After running all test folds, write the mean ± std tables and the figures.
+The 5-fold loop is in `docs/milestones/0005-cross-fold-summary.md`:
+
+```bash
+python scripts/summarize_results.py
+```
+
+Tables go to `outputs/summary/` and figures to `reports/figures/` (both
+git-ignored).
+
 ## Planned Milestones
 
 1. Scaffold, data contract, and validation.

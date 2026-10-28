@@ -129,7 +129,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   `docs/milestones/`.
 - Milestone summaries: `docs/milestones/0001-preprocessing.md`,
   `docs/milestones/0002-windowing.md`, `docs/milestones/0003-baselines.md`,
-  `docs/milestones/0004-rnn-models.md`.
+  `docs/milestones/0004-rnn-models.md`,
+  `docs/milestones/0005-cross-fold-summary.md`.
 
 ### Milestone 2: Sliding Windows
 
@@ -154,11 +155,18 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Not yet run on the real CSV; CPU training on ~1.14M windows is slow, so use
   a GPU if available.
 
+### Milestone 5: Cross-Fold Summary
+
+- `scripts/summarize_results.py` (decision `0010`) combines every
+  `test_fold_<k>` into mean ± std tables in `outputs/summary/`, plus figures
+  in `reports/figures/`.
+- Minimum reliable horizon = the largest h with mean AUROC ≥ 0.80 at every
+  horizon 1..h.
+
 ### Later Milestones
 
-- Evaluate AUROC, AUPRC, F1, sensitivity, specificity, and Early Detection
-  Advantage.
-- Aggregate metrics as mean ± std across the 5 test folds.
+- Optional TimeSHAP analysis (requires saving RNN weights, see decision
+  `0009`) and the written report.
 
 ## Open Questions
 
