@@ -65,7 +65,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   persisted.
 - Provisional EDA: a stay's warning time is the largest horizon whose score
   reaches the threshold (0 if never); EDA = mean paired difference over
-  positive test stays.
+  positive test stays. `--alert-persistence N` (decision `0008` amendment)
+  instead requires N consecutive alerting windows and counts the alert at the
+  last of them; baselines and RNNs must use the same N.
 - LSTM/GRU (decision `0009`): attention (residual) + 3 x recurrent(16) +
   BatchNorm + dropout 0.2 + Linear(8) head; weighted BCE, Adam 1e-3, batch 64
   windows, early stopping (patience 10) on the shared validation fold, no
@@ -183,7 +185,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 ## Open Questions
 
 - Confirm the provisional EDA rule (earliest alert) with the professor, or
-  whether an alert must persist for several windows.
+  whether an alert must persist for several windows (if so, for how many:
+  pass that as `--alert-persistence`).
 
 - Confirm with the professor whether the provided CSV was derived from
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.

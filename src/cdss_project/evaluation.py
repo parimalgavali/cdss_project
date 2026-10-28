@@ -88,13 +88,27 @@ def select_threshold(
     return float(thresholds[reaching.max()])
 
 
-def first_alert_horizons(predictions: pd.DataFrame, *, threshold: float) -> pd.DataFrame:
-    """Per stay: the largest horizon whose window score reaches the threshold.
+def first_alert_horizons(
+    predictions: pd.DataFrame, *, threshold: float, persistence: int = 1
+) -> pd.DataFrame:
+    """Per stay: the earliest horizon at which the alert has fired for `persistence` windows.
 
-    `first_alert_horizon` is the warning time in hours before the decision
-    point (0 when the alert never fires).
+    With `persistence=1` this is the largest horizon whose window score reaches
+    the threshold. With `persistence=p` the alert must hold for p consecutive
+    windows (horizons h+p-1 .. h, i.e. p consecutive hours), and it is raised at
+    the last of them, h. `first_alert_horizon` is the warning time in hours
+    before the decision point (0 when the alert never fires).
     """
-    alerts = predictions.assign(alert=predictions["score"] >= threshold)
+    if persistence < 1:
+        raise ValueError("persistence must be at least 1")
+    alerts = predictions.assign(alert=predictions["score"] >= threshold).sort_values(
+        ["stay_id", "horizon"], ascending=[True, False]
+    )
+    if persistence > 1:
+        grouped = alerts.groupby("stay_id", sort=False)
+        held = grouped["alert"].rolling(persistence).min().to_numpy() == 1
+        span = (grouped["horizon"].shift(persistence - 1) - alerts["horizon"]).to_numpy()
+        alerts["alert"] = held & (span == persistence - 1)
     fired = alerts[alerts["alert"]].groupby("stay_id")["horizon"].max()
     stays = alerts.groupby("stay_id")["y"].first().rename("y").to_frame()
     stays["first_alert_horizon"] = fired.reindex(stays.index).fillna(0).astype(int)

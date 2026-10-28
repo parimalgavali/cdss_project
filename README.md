@@ -126,6 +126,10 @@ Detection Advantage can be computed against them:
 python scripts/train_rnn.py
 ```
 
+To require an alert to hold for N consecutive hours before it counts for Early
+Detection Advantage, pass the same `--alert-persistence N` to both
+`train_baselines.py` and `train_rnn.py` (default 1: first crossing).
+
 Results go to `outputs/rnn/test_fold_<k>/` (git-ignored).
 
 After running all test folds, write the mean ± std tables and the figures.

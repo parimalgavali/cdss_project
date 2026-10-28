@@ -48,6 +48,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Pick the threshold reaching this validation sensitivity instead of max F1.",
     )
+    parser.add_argument(
+        "--alert-persistence",
+        type=int,
+        default=1,
+        help="Windows (hours) an alert must hold before it counts for EDA. Default: 1 (first crossing).",
+    )
     parser.add_argument("--rf-n-estimators", type=int, default=200)
     parser.add_argument("--rf-min-samples-leaf", type=int, default=20)
     parser.add_argument(
@@ -98,6 +104,7 @@ def main() -> int:
                 dataset,
                 model_name,
                 target_sensitivity=args.target_sensitivity,
+                alert_persistence=args.alert_persistence,
                 refit=not args.no_refit,
                 features=features,
                 **model_kwargs,
@@ -116,6 +123,7 @@ def main() -> int:
         "test_fold": results[0].test_fold,
         "validation_fold": results[0].validation_fold,
         "feature_count": len(features.names),
+        "alert_persistence": args.alert_persistence,
         "models": {
             result.model_name: {
                 "threshold": result.threshold,

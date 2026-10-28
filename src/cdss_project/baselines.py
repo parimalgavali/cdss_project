@@ -138,6 +138,7 @@ def run_baseline(
     model_name: str,
     *,
     target_sensitivity: float | None = None,
+    alert_persistence: int = 1,
     refit: bool = True,
     features: AggregatedFeatures | None = None,
     **model_kwargs: Any,
@@ -183,7 +184,9 @@ def run_baseline(
 
     metrics = metrics_by_horizon(predictions, threshold=threshold)
     metrics.insert(0, "model", model_name)
-    alerts = first_alert_horizons(predictions, threshold=threshold)
+    alerts = first_alert_horizons(
+        predictions, threshold=threshold, persistence=alert_persistence
+    )
     return BaselineResult(
         model_name=model_name,
         threshold=threshold,
@@ -193,5 +196,10 @@ def run_baseline(
         metrics=metrics,
         alerts=alerts,
         early_detection=early_detection_summary(alerts),
-        params={"target_sensitivity": target_sensitivity, "refit": refit, **model_kwargs},
+        params={
+            "target_sensitivity": target_sensitivity,
+            "alert_persistence": alert_persistence,
+            "refit": refit,
+            **model_kwargs,
+        },
     )

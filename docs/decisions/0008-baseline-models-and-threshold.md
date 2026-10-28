@@ -55,5 +55,13 @@ model.
 - The first-alert EDA rule should be confirmed with the professor. A
   persistence rule (alert must stay on for N windows) is a possible
   alternative.
+- Amendment (2026-10-28): `--alert-persistence N` (train_baselines.py and
+  train_rnn.py, default 1 = first crossing, unchanged) requires the score to
+  reach the threshold in N consecutive windows (horizons h+N-1 .. h, i.e. N
+  consecutive hours). The alert is raised at the last of them, h, so warning
+  time is the horizon at which the alert is confirmed. Non-contiguous horizons
+  (windows dropped by `--min-observed-hours`) break a run. `train_rnn.py`
+  refuses to compute EDA against baselines run with a different N. Either
+  professor answer can now be reported without code changes.
 - RF hyperparameters are fixed defaults, not tuned. On ~1.14M training
   windows the random forest is the slowest step.
