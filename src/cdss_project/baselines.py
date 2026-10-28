@@ -23,7 +23,7 @@ from cdss_project.evaluation import (
 from cdss_project.features import CATEGORICAL_COLUMNS
 from cdss_project.windows import WindowDataset
 
-MODEL_NAMES: tuple[str, ...] = ("logistic_regression", "random_forest")
+MODEL_NAMES: tuple[str, ...] = ("logistic_regression", "random_forest", "missingness_only")
 AGGREGATIONS: tuple[str, ...] = ("mean", "min", "max")
 
 
@@ -78,6 +78,18 @@ def aggregate_windows(
     )
 
 
+def missingness_features(dataset: WindowDataset) -> AggregatedFeatures:
+    """Which hours of each window are recorded (1) or structural padding (0), nothing else."""
+    if dataset.observed_mask is None:
+        raise ValueError("missingness_only needs observed_mask; rebuild the windows file")
+    width = dataset.observed_mask.shape[1]
+    return AggregatedFeatures(
+        values=dataset.observed_mask.astype(np.float32),
+        names=tuple(f"observed_hour_{width - i}" for i in range(width)),
+        n_numeric=width,
+    )
+
+
 def make_model(
     model_name: str,
     *,
@@ -88,7 +100,7 @@ def make_model(
     rf_min_samples_leaf: int = 20,
     n_jobs: int = -1,
 ) -> Pipeline:
-    if model_name == "logistic_regression":
+    if model_name in ("logistic_regression", "missingness_only"):
         numeric_step: Any = StandardScaler()
         estimator: Any = LogisticRegression(
             class_weight="balanced", max_iter=2000, random_state=random_state
@@ -153,7 +165,10 @@ def run_baseline(
     inner_train = train & (dataset.fold != validation_fold)
     validation = train & (dataset.fold == validation_fold)
 
-    features = features or aggregate_windows(dataset.X, dataset.feature_columns)
+    if model_name == "missingness_only":
+        features = missingness_features(dataset)
+    else:
+        features = features or aggregate_windows(dataset.X, dataset.feature_columns)
 
     def new_model() -> Pipeline:
         return make_model(

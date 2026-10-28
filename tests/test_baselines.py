@@ -88,3 +88,22 @@ def test_run_baseline_requires_folds():
     )
     with pytest.raises(ValueError, match="fold and split"):
         run_baseline(without_folds, "logistic_regression")
+
+
+def test_missingness_only_sees_padding_flags_only():
+    dataset = make_dataset()
+    padded = np.repeat(dataset.y == 1, 1)[:, None] & (np.arange(6) < 3)
+    mask = np.where(padded, 0, 1).astype(np.int8)
+    dataset = WindowDataset(**{**dataset.__dict__, "observed_mask": mask})
+
+    result = run_baseline(dataset, "missingness_only")
+
+    assert result.metrics.iloc[0]["auroc"] == pytest.approx(1.0)
+    shuffled = WindowDataset(**{**dataset.__dict__, "X": np.zeros_like(dataset.X)})
+    same = run_baseline(shuffled, "missingness_only")
+    assert np.allclose(same.predictions["score"], result.predictions["score"])
+
+
+def test_missingness_only_requires_mask():
+    with pytest.raises(ValueError, match="observed_mask"):
+        run_baseline(make_dataset(), "missingness_only")

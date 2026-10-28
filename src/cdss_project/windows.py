@@ -30,6 +30,7 @@ class WindowDataset:
     stay_id: np.ndarray
     feature_columns: tuple[str, ...]
     observed_hours: np.ndarray | None = None
+    observed_mask: np.ndarray | None = None
     fold: np.ndarray | None = None
     split: np.ndarray | None = None
 
@@ -98,6 +99,7 @@ def build_windows(
         "horizon": np.tile(horizon_per_stay.astype(np.int16), n_stays),
         "stay_id": np.repeat(stay_ids.astype(np.int64), windows_per_stay),
         "observed_hours": None,
+        "observed_mask": None,
         "fold": None,
         "split": None,
     }
@@ -108,6 +110,7 @@ def build_windows(
         )
         observed_windows = np.lib.stride_tricks.sliding_window_view(observed, window_size, axis=1)
         dataset_fields["observed_hours"] = observed_windows.sum(axis=2).reshape(-1).astype(np.int8)
+        dataset_fields["observed_mask"] = observed_windows.reshape(-1, window_size).astype(np.int8)
     elif min_observed_hours > 0:
         raise KeyError("min_observed_hours requires an is_padding column")
 
@@ -133,6 +136,7 @@ def filter_windows(dataset: WindowDataset, mask: np.ndarray) -> WindowDataset:
         stay_id=dataset.stay_id[mask],
         feature_columns=dataset.feature_columns,
         observed_hours=pick(dataset.observed_hours),
+        observed_mask=pick(dataset.observed_mask),
         fold=pick(dataset.fold),
         split=pick(dataset.split),
     )
@@ -184,7 +188,7 @@ def save_windows(dataset: WindowDataset, path: Path, *, overwrite: bool = False)
         "stay_id": dataset.stay_id,
         "feature_columns": np.array(dataset.feature_columns, dtype=str),
     }
-    for name in ("observed_hours", "fold", "split"):
+    for name in ("observed_hours", "observed_mask", "fold", "split"):
         value = getattr(dataset, name)
         if value is not None:
             arrays[name] = value.astype(str) if name == "split" else value
@@ -198,7 +202,7 @@ def load_windows(path: Path) -> WindowDataset:
     with np.load(path, allow_pickle=False) as data:
         optional = {
             name: data[name] if name in data.files else None
-            for name in ("observed_hours", "fold", "split")
+            for name in ("observed_hours", "observed_mask", "fold", "split")
         }
         return WindowDataset(
             X=data["X"],

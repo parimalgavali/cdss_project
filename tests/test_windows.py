@@ -69,6 +69,18 @@ def test_observed_hours_counts_non_padding_rows():
     assert dataset.observed_hours[8:].tolist() == [6] * 17
 
 
+def test_observed_mask_marks_recorded_hours_per_window(tmp_path):
+    dataset = build_windows(
+        make_hourly_frame({1: 0}, padding={1: 8}), feature_columns=["heart_rate"]
+    )
+
+    assert dataset.observed_mask.shape == (25, 6)
+    assert dataset.observed_mask[3].tolist() == [0, 0, 0, 0, 0, 1]
+    assert (dataset.observed_mask.sum(axis=1) == dataset.observed_hours).all()
+    reloaded = load_windows(save_windows(dataset, tmp_path / "w.npz"))
+    assert (reloaded.observed_mask == dataset.observed_mask).all()
+
+
 def test_min_observed_hours_filters_windows():
     dataset = build_windows(
         make_hourly_frame({1: 0}, padding={1: 8}),
