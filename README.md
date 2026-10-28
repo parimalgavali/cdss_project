@@ -129,7 +129,7 @@ python scripts/train_rnn.py
 Results go to `outputs/rnn/test_fold_<k>/` (git-ignored).
 
 After running all test folds, write the mean ± std tables and the figures.
-The 5-fold loop is in `docs/milestones/0005-cross-fold-summary.md`:
+`scripts/run_cv.py` (below) runs all folds and this step for you:
 
 ```bash
 python scripts/summarize_results.py
@@ -144,6 +144,28 @@ feature). This needs models saved during training:
 ```bash
 python scripts/train_rnn.py --save-model --overwrite
 python scripts/explain_rnn.py
+```
+
+### Run everything in one command
+
+`scripts/run_cv.py` runs every test fold (preprocess, windows, baselines,
+LSTM/GRU, optional explanations) and then the summary (decision `0012`):
+
+```bash
+python scripts/run_cv.py --dry-run                 # print the commands only
+python scripts/run_cv.py --skip-rnn                # quick baselines-only pass
+python scripts/run_cv.py --device cuda --explain   # full run with explanations
+python scripts/run_cv.py --resume                  # continue after an interruption
+```
+
+### Synthetic data
+
+To try the pipeline without the clinical CSV, write a synthetic dataset that
+follows the same contract (random values, not clinical):
+
+```bash
+python scripts/make_synthetic_data.py              # data/synthetic/synthetic_sepsis.csv
+python scripts/run_cv.py --csv data/synthetic/synthetic_sepsis.csv --max-epochs 3
 ```
 
 ## Planned Milestones

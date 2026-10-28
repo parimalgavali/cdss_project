@@ -12,7 +12,7 @@ Offline, reproducible research pipeline for early sepsis-onset prediction from I
 | Name | Covers |
 |---|---|
 | **cli-scripts** | `scripts/` (argparse entry points: `--csv`, `--output`, `--overwrite`, `--n-folds`, `--test-fold`, `--random-state`) |
-| **data-pipeline** | `src/cdss_project/` (data_contract, audit, preprocessing, features, windows, baselines, evaluation, rnn, reporting, explain) |
+| **data-pipeline** | `src/cdss_project/` (data_contract, audit, preprocessing, features, windows, baselines, evaluation, rnn, reporting, explain, synthetic) |
 | **notebooks** | `notebooks/` (exploration/figures) |
 | **tests** | `tests/`, `pytest.ini` |
 | **repo-hygiene** | `.gitignore`, `requirements.txt`, `docs/`, `AGENTS.md`, committed PDFs |
@@ -41,7 +41,7 @@ Offline, reproducible research pipeline for early sepsis-onset prediction from I
 - `.gitignore` excludes `data/`, `models/`, `outputs/`, `reports/figures/`, venvs, caches and the professor's paper.
 - `AGENTS.md` / decision 0001 forbid committing clinical data or generated artifacts.
 - Preprocessing never overwrites the source CSV; output refuses to overwrite without `--overwrite`.
-- Only pandas CSV parsing and NumPy `.npz` arrays loaded with `allow_pickle=False`; no pickle, eval, subprocess or network calls in current code; fitted baseline models are never saved; RNN weights are saved only with `--save-model` and loaded only as tensors (`weights_only=True`), never via pickle/joblib.
+- Only pandas CSV parsing and NumPy `.npz` arrays loaded with `allow_pickle=False`; no pickle, eval or network calls; the only subprocess use is `scripts/run_cv.py`, which runs the repository's own scripts with `sys.executable` and an argument list (no shell); fitted baseline models are never saved; RNN weights are saved only with `--save-model` and loaded only as tensors (`weights_only=True`), never via pickle/joblib.
 - Train-only fitting of imputation statistics (result integrity / leakage).
 
 ## Out of scope / accepted risk

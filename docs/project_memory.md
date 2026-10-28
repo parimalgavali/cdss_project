@@ -176,9 +176,21 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   baseline) without the `timeshap` package.
 - `summarize_results.py` writes `outputs/summary/results.md` for the report.
 
+### Cross-Validation Runner and Synthetic Data
+
+- Decision `0012`: `scripts/run_cv.py` runs every test fold through the
+  existing scripts (as subprocesses) and then `summarize_results.py`;
+  `--resume` skips folds that already have `run_summary.json`, `--skip-rnn`
+  runs baselines only, `--explain` adds `explain_rnn.py` per fold.
+- `cdss_project.synthetic` / `scripts/make_synthetic_data.py` write a
+  contract-conforming random CSV (leading padding, label-dependent drift that
+  grows towards hour 1). `tests/test_run_cv.py` runs the whole pipeline on it
+  in CI.
+
 ### Remaining Work
 
-- Run the full 5-fold pipeline on the real CSV, then write the report text.
+- Run the full 5-fold pipeline on the real CSV (`python scripts/run_cv.py`),
+  then write the report text.
 
 ## Open Questions
 

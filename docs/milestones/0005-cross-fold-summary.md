@@ -10,6 +10,8 @@ figures. Rules: decision `0010`.
 
 ## How To Run
 
+`python scripts/run_cv.py` (milestone `0007`) runs the loop below for you.
+
 ```bash
 source .venv/bin/activate
 for k in 0 1 2 3 4; do
