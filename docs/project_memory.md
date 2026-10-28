@@ -67,7 +67,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   reaches the threshold (0 if never); EDA = mean paired difference over
   positive test stays. `--alert-persistence N` (decision `0008` amendment)
   instead requires N consecutive alerting windows and counts the alert at the
-  last of them; baselines and RNNs must use the same N.
+  last of them; baselines and RNNs must use the same N (`run_cv.py
+  --alert-persistence N` passes it to both).
 - LSTM/GRU (decision `0009`): attention (residual) + 3 x recurrent(16) +
   BatchNorm + dropout 0.2 + Linear(8) head; weighted BCE, Adam 1e-3, batch 64
   windows, early stopping (patience 10) on the shared validation fold, no

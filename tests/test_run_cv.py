@@ -38,6 +38,19 @@ def test_dry_run_lists_every_step_per_fold(tmp_path, capsys):
     assert "--save-model" in lines[3]
 
 
+def test_alert_persistence_reaches_both_training_steps(tmp_path, capsys):
+    run_cv = load_run_cv()
+
+    run_cv.main(
+        ["--csv", str(tmp_path / "x.csv"), "--folds", "0", "--alert-persistence", "3", "--dry-run"]
+    )
+
+    lines = [line for line in capsys.readouterr().out.splitlines() if line.startswith("$ ")]
+    training = [line for line in lines if "train_baselines.py" in line or "train_rnn.py" in line]
+    assert len(training) == 2
+    assert all("--alert-persistence 3" in line for line in training)
+
+
 def test_skip_rnn_drops_rnn_steps(tmp_path, capsys):
     run_cv = load_run_cv()
 

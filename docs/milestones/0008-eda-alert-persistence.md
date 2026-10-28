@@ -18,6 +18,8 @@ python scripts/train_rnn.py --alert-persistence 3 --overwrite
 python scripts/summarize_results.py --overwrite
 ```
 
+Or in one go: `python scripts/run_cv.py --alert-persistence 3 --output-root outputs/persist3`.
+
 Default `--alert-persistence 1` keeps the earlier first-crossing results.
 Write persistence runs to separate `--output-dir`s if both are needed.
 
