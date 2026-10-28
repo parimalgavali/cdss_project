@@ -101,6 +101,15 @@ python scripts/build_windows.py
 This writes `data/processed/windows_w6.npz` (git-ignored); load it with
 `cdss_project.windows.load_windows`.
 
+Train the Logistic Regression and Random Forest baselines and report
+horizon-wise metrics:
+
+```bash
+python scripts/train_baselines.py
+```
+
+Results go to `outputs/baselines/test_fold_<k>/` (git-ignored).
+
 ## Planned Milestones
 
 1. Scaffold, data contract, and validation.

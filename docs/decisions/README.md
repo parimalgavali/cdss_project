@@ -19,3 +19,4 @@ When a future session makes a meaningful project choice:
 - `0005-security-model.md`
 - `0006-categorical-padding-and-fold-policy.md`
 - `0007-sliding-window-definition.md`
+- `0008-baseline-models-and-threshold.md`
