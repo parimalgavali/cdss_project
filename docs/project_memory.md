@@ -52,6 +52,10 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   before imputation) and records a persisted, `stay_has_sepsis`-stratified
   `fold` (default 5 folds, seed 42) plus `split` for the chosen test fold.
 - Label columns must not be statistically imputed.
+- Sliding windows (decision `0007`): 6-hour windows, 1-hour stride, 25 per
+  stay; horizon = `hour_before` of the window's last row (25..1); window label
+  = `stay_has_sepsis`; windows never cross stays; no windows dropped by
+  default (`--min-observed-hours` only for sensitivity analyses).
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
 - Keep the repository threat model in `SECURITY_MODEL.md` and update it when
@@ -111,15 +115,25 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 
 - Each completed milestone should get its own Markdown summary under
   `docs/milestones/`.
-- Current milestone summary: `docs/milestones/0001-preprocessing.md`.
+- Milestone summaries: `docs/milestones/0001-preprocessing.md`,
+  `docs/milestones/0002-windowing.md`.
+
+### Milestone 2: Sliding Windows
+
+- Implemented in `src/cdss_project/windows.py` and
+  `scripts/build_windows.py`; output `data/processed/windows_w6.npz`.
+- Each window stores `X (6, 27)`, `y`, `horizon`, `stay_id`,
+  `observed_hours`, `fold`, `split`.
+- Not yet run on the real CSV; expected 1,426,000 windows.
 
 ### Later Milestones
 
-- Build 6-hour sliding windows and horizon labels.
 - Build Logistic Regression and Random Forest baselines.
 - Build PyTorch LSTM and GRU models.
 - Evaluate AUROC, AUPRC, F1, sensitivity, specificity, and Early Detection
   Advantage.
+- Define the EDA alert rule concretely (for example, the largest horizon at
+  which a stay's prediction first crosses the decision threshold).
 
 ## Open Questions
 
