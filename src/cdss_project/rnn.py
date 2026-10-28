@@ -205,6 +205,7 @@ def run_rnn(
     *,
     config: TrainConfig | None = None,
     target_sensitivity: float | None = None,
+    alert_persistence: int = 1,
 ) -> RNNResult:
     """Train on training folds minus the validation fold; tune threshold on it; score test fold."""
     config = config or TrainConfig()
@@ -253,11 +254,14 @@ def run_rnn(
 
     metrics = metrics_by_horizon(predictions, threshold=threshold)
     metrics.insert(0, "model", cell)
-    alerts = first_alert_horizons(predictions, threshold=threshold)
+    alerts = first_alert_horizons(
+        predictions, threshold=threshold, persistence=alert_persistence
+    )
     best_epoch = min(history, key=lambda row: row["val_loss"])["epoch"]
     params: dict[str, Any] = {
         **asdict(config),
         "target_sensitivity": target_sensitivity,
+        "alert_persistence": alert_persistence,
         "input_features": encoder.n_features,
         "epochs_trained": len(history),
         "best_epoch": best_epoch,

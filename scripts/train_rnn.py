@@ -55,6 +55,12 @@ def parse_args() -> argparse.Namespace:
         help="Pick the threshold reaching this validation sensitivity instead of max F1.",
     )
     parser.add_argument(
+        "--alert-persistence",
+        type=int,
+        default=1,
+        help="Windows (hours) an alert must hold before it counts for EDA. Default: 1 (first crossing).",
+    )
+    parser.add_argument(
         "--save-model",
         action="store_true",
         help="Save state_dict + encoder to <model-dir>/test_fold_<k>/ (needed for explain_rnn.py).",
@@ -83,6 +89,17 @@ def main() -> int:
     if metrics_path.exists() and not args.overwrite:
         print(f"Results already exist in {run_dir}. Use --overwrite.", file=sys.stderr)
         return 2
+    baseline_summary = args.baseline_dir / f"test_fold_{test_fold}" / "run_summary.json"
+    if baseline_summary.exists():
+        baseline_persistence = json.loads(baseline_summary.read_text()).get("alert_persistence", 1)
+        if baseline_persistence != args.alert_persistence:
+            print(
+                f"Baselines in {baseline_summary.parent} use --alert-persistence "
+                f"{baseline_persistence}, not {args.alert_persistence}; EDA would not be like "
+                "for like. Rerun the baselines or match the setting.",
+                file=sys.stderr,
+            )
+            return 2
 
     config = TrainConfig(
         max_epochs=args.max_epochs,
@@ -95,7 +112,13 @@ def main() -> int:
     results = []
     for cell in dict.fromkeys(args.models):
         print(f"Training {cell} ...", flush=True)
-        result = run_rnn(dataset, cell, config=config, target_sensitivity=args.target_sensitivity)
+        result = run_rnn(
+            dataset,
+            cell,
+            config=config,
+            target_sensitivity=args.target_sensitivity,
+            alert_persistence=args.alert_persistence,
+        )
         print(
             f"  {result.params['epochs_trained']} epochs, best epoch {result.params['best_epoch']}",
             flush=True,
@@ -135,6 +158,7 @@ def main() -> int:
         "windows_file": str(args.windows),
         "test_fold": test_fold,
         "validation_fold": results[0].validation_fold,
+        "alert_persistence": args.alert_persistence,
         "models": {
             result.model_name: {
                 "threshold": result.threshold,
