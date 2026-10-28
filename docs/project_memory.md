@@ -56,6 +56,14 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   stay; horizon = `hour_before` of the window's last row (25..1); window label
   = `stay_has_sepsis`; windows never cross stays; no windows dropped by
   default (`--min-observed-hours` only for sensitivity analyses).
+- Baselines (decision `0008`): LR/RF on window mean/min/max of numeric
+  features + one-hot last-hour categoricals; class weights, no SMOTE;
+  threshold tuned on the training fold after the test fold (max F1 or
+  `--target-sensitivity`), then refit on all training stays; models are not
+  persisted.
+- Provisional EDA: a stay's warning time is the largest horizon whose score
+  reaches the threshold (0 if never); EDA = mean paired difference over
+  positive test stays.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
 - Keep the repository threat model in `SECURITY_MODEL.md` and update it when
@@ -116,7 +124,7 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Each completed milestone should get its own Markdown summary under
   `docs/milestones/`.
 - Milestone summaries: `docs/milestones/0001-preprocessing.md`,
-  `docs/milestones/0002-windowing.md`.
+  `docs/milestones/0002-windowing.md`, `docs/milestones/0003-baselines.md`.
 
 ### Milestone 2: Sliding Windows
 
@@ -126,16 +134,25 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   `observed_hours`, `fold`, `split`.
 - Not yet run on the real CSV; expected 1,426,000 windows.
 
+### Milestone 3: Baselines
+
+- Implemented in `src/cdss_project/baselines.py`,
+  `src/cdss_project/evaluation.py`, `scripts/train_baselines.py`; results in
+  `outputs/baselines/test_fold_<k>/`.
+- Not yet run on the real CSV. 5-fold CV = rerun preprocess, windows and
+  baselines per `--test-fold`.
+
 ### Later Milestones
 
-- Build Logistic Regression and Random Forest baselines.
 - Build PyTorch LSTM and GRU models.
 - Evaluate AUROC, AUPRC, F1, sensitivity, specificity, and Early Detection
   Advantage.
-- Define the EDA alert rule concretely (for example, the largest horizon at
-  which a stay's prediction first crosses the decision threshold).
+- Aggregate metrics as mean ± std across the 5 test folds.
 
 ## Open Questions
+
+- Confirm the provisional EDA rule (earliest alert) with the professor, or
+  whether an alert must persist for several windows.
 
 - Confirm with the professor whether the provided CSV was derived from
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.
