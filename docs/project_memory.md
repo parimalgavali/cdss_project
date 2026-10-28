@@ -64,6 +64,10 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Provisional EDA: a stay's warning time is the largest horizon whose score
   reaches the threshold (0 if never); EDA = mean paired difference over
   positive test stays.
+- LSTM/GRU (decision `0009`): attention (residual) + 3 x recurrent(16) +
+  BatchNorm + dropout 0.2 + Linear(8) head; weighted BCE, Adam 1e-3, batch 64
+  windows, early stopping (patience 10) on the shared validation fold, no
+  refit; inputs standardized + one-hot categoricals fit on training stays.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
 - Keep the repository threat model in `SECURITY_MODEL.md` and update it when
@@ -124,7 +128,8 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Each completed milestone should get its own Markdown summary under
   `docs/milestones/`.
 - Milestone summaries: `docs/milestones/0001-preprocessing.md`,
-  `docs/milestones/0002-windowing.md`, `docs/milestones/0003-baselines.md`.
+  `docs/milestones/0002-windowing.md`, `docs/milestones/0003-baselines.md`,
+  `docs/milestones/0004-rnn-models.md`.
 
 ### Milestone 2: Sliding Windows
 
@@ -142,9 +147,15 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Not yet run on the real CSV. 5-fold CV = rerun preprocess, windows and
   baselines per `--test-fold`.
 
+### Milestone 4: LSTM and GRU
+
+- Implemented in `src/cdss_project/rnn.py` and `scripts/train_rnn.py`;
+  results in `outputs/rnn/test_fold_<k>/`, including `eda_vs_baselines.csv`.
+- Not yet run on the real CSV; CPU training on ~1.14M windows is slow, so use
+  a GPU if available.
+
 ### Later Milestones
 
-- Build PyTorch LSTM and GRU models.
 - Evaluate AUROC, AUPRC, F1, sensitivity, specificity, and Early Detection
   Advantage.
 - Aggregate metrics as mean ± std across the 5 test folds.
