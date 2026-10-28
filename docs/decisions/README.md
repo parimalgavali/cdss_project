@@ -17,3 +17,4 @@ When a future session makes a meaningful project choice:
 - `0003-preprocessing-direction.md`
 - `0004-data-audit-and-duplicate-policy.md`
 - `0005-security-model.md`
+- `0006-categorical-padding-and-fold-policy.md`

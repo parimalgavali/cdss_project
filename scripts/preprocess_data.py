@@ -44,7 +44,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Replace the output file if it already exists.",
     )
-    parser.add_argument("--test-size", type=float, default=0.2)
+    parser.add_argument(
+        "--n-folds",
+        type=int,
+        default=5,
+        help="Number of stay-level folds, stratified by stay_has_sepsis. Default: 5",
+    )
+    parser.add_argument(
+        "--test-fold",
+        type=int,
+        default=0,
+        help="Fold used as the test split; imputation statistics use the others. Default: 0",
+    )
     parser.add_argument("--random-state", type=int, default=42)
     return parser.parse_args()
 
@@ -54,7 +65,8 @@ def main() -> int:
     if args.dry_run:
         summary = run_preprocessing_dry_run(
             args.csv,
-            test_size=args.test_size,
+            n_folds=args.n_folds,
+            test_fold=args.test_fold,
             random_state=args.random_state,
         )
         print(format_dry_run_summary(summary))
@@ -64,7 +76,8 @@ def main() -> int:
         summary = write_preprocessed_csv(
             args.csv,
             args.output,
-            test_size=args.test_size,
+            n_folds=args.n_folds,
+            test_fold=args.test_fold,
             random_state=args.random_state,
             overwrite=args.overwrite,
         )

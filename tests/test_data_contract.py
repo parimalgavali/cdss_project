@@ -6,6 +6,7 @@ import pytest
 from cdss_project.data_contract import (
     REQUIRED_COLUMNS,
     ValidationIssue,
+    format_summary,
     inspect_dataframe,
     validate_csv_path,
 )
@@ -122,3 +123,20 @@ def test_inspect_dataframe_reports_duplicate_structural_and_stay_label_counts():
 def test_validate_csv_path_rejects_missing_file(tmp_path: Path):
     with pytest.raises(FileNotFoundError, match="Dataset not found"):
         validate_csv_path(tmp_path / "missing.csv")
+
+
+def test_inspect_dataframe_reports_padding_position_and_categorical_types():
+    frame = make_valid_frame()
+    padded = (frame["stay_id"] == 100) & (frame["hour_before"] >= 29)
+    for column in REQUIRED_COLUMNS:
+        if column not in {"stay_id", "hour_before"}:
+            frame.loc[padded, column] = pd.NA
+
+    summary = inspect_dataframe(frame)
+
+    assert summary.structural_empty_by_hour[30] == 1
+    assert summary.structural_empty_by_hour[29] == 1
+    assert summary.structural_empty_by_hour[1] == 0
+    assert next(iter(summary.structural_empty_by_hour)) == 30
+    assert summary.categorical_value_types["gender"] == "text (1 distinct)"
+    assert "hour_before=30: 1" in format_summary(summary)

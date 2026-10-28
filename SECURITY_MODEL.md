@@ -12,7 +12,7 @@ Offline, reproducible research pipeline for early sepsis-onset prediction from I
 ## Components
 | Name | Covers |
 |---|---|
-| **cli-scripts** | `scripts/` (argparse entry points: `--csv`, `--output`, `--overwrite`, `--test-size`, `--random-state`) |
+| **cli-scripts** | `scripts/` (argparse entry points: `--csv`, `--output`, `--overwrite`, `--n-folds`, `--test-fold`, `--random-state`) |
 | **data-pipeline** | `src/cdss_project/` (data_contract, audit, preprocessing, features; future windowing/model code) |
 | **notebooks** | `notebooks/` (exploration/figures) |
 | **tests** | `tests/`, `pytest.ini` |

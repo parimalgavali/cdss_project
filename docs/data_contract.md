@@ -72,7 +72,19 @@ stay_has_sepsis = max(observed sepsis values for the stay)
 
 This policy is recorded in `docs/decisions/0002-sepsis-label-nan-policy.md`.
 
-Clinical feature columns should be imputed during preprocessing according to the
-professor's 2025 paper: patient-level linear interpolation, with global
-training-set mean fallback for features entirely missing within a patient. Label
-columns must not be statistically imputed.
+Numeric clinical feature columns should be imputed during preprocessing
+according to the professor's 2025 paper: patient-level linear interpolation,
+with global training-set mean fallback for features entirely missing within a
+patient. Categorical columns (`gender`, `ethnicity`, `last_careunit`) are filled
+within the stay and fall back to the training-set mode. Label columns must not
+be statistically imputed.
+
+## Processed Output Columns
+
+`data/processed/mimic_sepsis_preprocessed.csv` contains all input columns plus:
+
+- `is_padding`: `1` when the row was a structural empty row before imputation.
+- `stay_has_sepsis`, `observed_label_count`: stay-level derived labels.
+- `fold`: stay-level fold (stratified by `stay_has_sepsis`).
+- `split`: `test` for the chosen test fold, otherwise `train`. Imputation
+  statistics are fit on `train` only.
