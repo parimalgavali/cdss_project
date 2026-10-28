@@ -26,16 +26,20 @@ Both files stay local and ignored by Git.
 1. Loads the original CSV.
 2. Removes exact duplicate `stay_id + hour_before` rows.
 3. Fails if duplicate stay-hour rows contain conflicting values.
-4. Splits stays into train/test groups by `stay_id` using an 80/20 split.
-5. Fits global feature means using training stays only.
-6. Applies professor-style feature imputation:
+4. Assigns stays to 5 folds stratified by `stay_has_sepsis` (seed 42); fold 0
+   is the default test split (about 80/20).
+5. Fits global numeric feature means and categorical modes using training
+   stays only.
+6. Applies professor-style imputation to numeric features:
    - linear interpolation within each patient's hourly time series;
    - train-set mean fallback for remaining missing feature values.
-7. Leaves the `sepsis` column untouched.
-8. Adds stay-level derived label columns:
-   - `stay_has_sepsis`
-   - `observed_label_count`
-9. Writes a new processed CSV without modifying the original CSV.
+7. Fills categorical columns within the stay, then with the train-set mode
+   (never interpolated or averaged; see decision `0006`).
+8. Leaves the `sepsis` column untouched.
+9. Adds `is_padding` (structural empty row before imputation), stay-level
+   derived label columns (`stay_has_sepsis`, `observed_label_count`), `fold`,
+   and `split`.
+10. Writes a new processed CSV without modifying the original CSV.
 
 ## Important Label Policy
 
@@ -87,7 +91,13 @@ If the output file already exists and should be replaced:
 python scripts/preprocess_data.py --overwrite
 ```
 
-## Current Full-Dataset Dry-Run Result
+Use a different test fold or fold count:
+
+```bash
+python scripts/preprocess_data.py --n-folds 5 --test-fold 2
+```
+
+## Full-Dataset Dry-Run Result (before decision `0006`)
 
 ```text
 Rows after deduplication: 1,711,200
@@ -117,10 +127,13 @@ Verification results:
 - original CSV SHA-256 before and after preprocessing:
   `7a13cf25bc2deea011a148a9d34895b937d1eef34005939d1190d3dff797ac75`.
 
+The numbers above predate decision `0006` (80/20 unstratified split, all 27
+columns mean-imputed). Rerun the dry run on the real CSV to refresh them.
+
 ## What This Milestone Does Not Do Yet
 
 - It does not build 6-hour sliding windows.
-- It does not create validation splits.
+- It does not create validation splits inside the training folds.
 - It does not train baseline or neural-network models.
 - It does not oversample or undersample train, validation, or test data.
 - It does not modify the original CSV.

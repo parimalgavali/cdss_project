@@ -69,7 +69,9 @@ python scripts/inspect_data.py
 ```
 
 The script checks the expected columns, stay/hour structure, `hour_before`
-range, and reports `NaN` labels in `sepsis` explicitly.
+range, and reports `NaN` labels in `sepsis` explicitly. It also prints where
+structural padding rows sit (per `hour_before`) and whether categorical columns
+are numeric codes or text.
 
 Run the preprocessing dry run:
 
@@ -84,7 +86,9 @@ python scripts/preprocess_data.py
 ```
 
 The generated file is written to `data/processed/mimic_sepsis_preprocessed.csv`
-and remains ignored by Git.
+and remains ignored by Git. It adds `is_padding`, `stay_has_sepsis`,
+`observed_label_count`, a stratified stay-level `fold`, and `split`
+(`--n-folds`, default 5; `--test-fold`, default 0).
 
 ## Planned Milestones
 

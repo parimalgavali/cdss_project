@@ -44,6 +44,13 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   remain missing after interpolation with a global training-set mean. This
   covers leading/trailing missing values and features entirely missing for a
   patient.
+- Categorical columns (`gender`, `ethnicity`, `last_careunit`) are never
+  interpolated or averaged: fill within the stay (ffill/bfill), then use the
+  train-set mode. Interpolation and mean fallback apply to numeric columns only
+  (`INTERPOLATED_FEATURE_COLUMNS`). See `0006`.
+- The processed table flags structural empty rows as `is_padding` (computed
+  before imputation) and records a persisted, `stay_has_sepsis`-stratified
+  `fold` (default 5 folds, seed 42) plus `split` for the chosen test fold.
 - Label columns must not be statistically imputed.
 - Fit global imputation, scaling, and encoding statistics on training stays
   only to avoid train/test leakage.
@@ -56,16 +63,16 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Unique stays: `57,040`.
 - Expected hour column in the actual CSV is `hour_before`, not `hours_before`.
 - `hour_before` ranges from `1` to `30`.
-- There are `28` duplicate `stay_id + hour_before` rows, all from one stay with
-  `58` rows. Plan A inspection found these are exact duplicate rows for stay
-  `34934165`; exact duplicates may be dropped, while conflicting duplicates
-  must raise an error.
+- There are `28` duplicate `stay_id + hour_before` groups (`56` rows involved,
+  `28` surplus rows), all from stay `34934165`, which has `58` rows. Plan A
+  inspection found these are exact duplicate rows; exact duplicates may be
+  dropped, while conflicting duplicates must raise an error.
 - Rows with `sepsis == NaN` have zero non-missing clinical feature values in the
   inspected CSV. Current count: `908,798` structural empty rows.
 - Stay-level outcomes derived from observed labels: `9,657` positive stays and
   `47,383` negative stays.
-- Professor-style preprocessing dry run deduplicates to `1,711,200` rows,
-  imputes `27` feature columns, and reduces missing feature values from
+- Professor-style preprocessing dry run (before `0006`) deduplicated to
+  `1,711,200` rows, imputed `27` feature columns, and reduces missing feature values from
   `34,516,021` to `0` without writing output files.
 - Preprocessing can now write a generated processed copy to
   `data/processed/mimic_sepsis_preprocessed.csv`. The original CSV is never
@@ -96,6 +103,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
 - Produce a clean hourly table ready for sliding windows.
 - Status: implemented as a dry-run pipeline and as an output-writing pipeline
   that creates a separate processed CSV under `data/processed/`.
+- Refined by `0006`: categorical mode fill, `is_padding`, persisted stratified
+  `fold` / `split`. The processed CSV must be regenerated on the real data to
+  pick up these columns.
 
 ### Milestone Documentation
 
@@ -117,3 +127,10 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.
 - Decide whether to keep missingness masks as auxiliary features in addition to
   professor-style interpolation, or reserve them for a later sensitivity check.
+- Where does padding sit in the 30-hour sequence? Run
+  `python scripts/inspect_data.py` on the real CSV and read the
+  "Structural empty rows by hour_before" table. If padding concentrates in the
+  early hours, long-horizon windows are mostly imputed and filtering by
+  observed hours should be considered.
+- Confirm whether categorical columns in the real CSV are numeric codes or
+  text (the inspection report prints this).

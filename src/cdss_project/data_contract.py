@@ -6,9 +6,12 @@ from typing import Any
 
 import pandas as pd
 
-from cdss_project.audit import derive_stay_outcomes, duplicate_summary, structural_empty_rows
-from cdss_project.features import FEATURE_COLUMNS, REQUIRED_COLUMNS
-
+from cdss_project.audit import (
+    derive_stay_outcomes,
+    duplicate_summary,
+    structural_empty_rows,
+)
+from cdss_project.features import CATEGORICAL_COLUMNS, FEATURE_COLUMNS, REQUIRED_COLUMNS
 
 DATASET_PATH = Path("data/mimic_sepsis_onset_prediction.csv")
 
@@ -34,6 +37,8 @@ class DataContractSummary:
     stay_positive_count: int = 0
     stay_negative_count: int = 0
     stay_rows_summary: dict[str, float] = field(default_factory=dict)
+    structural_empty_by_hour: dict[int, int] = field(default_factory=dict)
+    categorical_value_types: dict[str, str] = field(default_factory=dict)
     issues: list[ValidationIssue] = field(default_factory=list)
 
     @property
@@ -76,6 +81,10 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
     duplicate_stay_hour_row_count = 0
     duplicate_stay_hour_group_count = 0
     structural_empty_row_count = 0
+    structural_empty_by_hour: dict[int, int] = {}
+    categorical_value_types = {
+        column: _value_type(frame[column]) for column in CATEGORICAL_COLUMNS if column in frame.columns
+    }
     stay_positive_count = 0
     stay_negative_count = 0
 
@@ -148,9 +157,13 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
                     ),
                 )
             )
-        structural_empty_row_count = int(
-            structural_empty_rows(frame, feature_columns=FEATURE_COLUMNS).sum()
-        )
+        empty_mask = structural_empty_rows(frame, feature_columns=FEATURE_COLUMNS)
+        structural_empty_row_count = int(empty_mask.sum())
+        if "hour_before" in frame.columns:
+            by_hour = (
+                empty_mask.groupby(frame["hour_before"]).sum().sort_index(ascending=False)
+            )
+            structural_empty_by_hour = {int(hour): int(count) for hour, count in by_hour.items()}
         try:
             stay_outcomes = derive_stay_outcomes(frame)
             stay_positive_count = int(stay_outcomes["stay_has_sepsis"].sum())
@@ -172,6 +185,8 @@ def inspect_dataframe(frame: pd.DataFrame) -> DataContractSummary:
         stay_positive_count=stay_positive_count,
         stay_negative_count=stay_negative_count,
         stay_rows_summary=stay_rows_summary,
+        structural_empty_by_hour=structural_empty_by_hour,
+        categorical_value_types=categorical_value_types,
         issues=issues,
     )
 
@@ -208,6 +223,15 @@ def format_summary(summary: DataContractSummary) -> str:
         f"{summary.duplicate_stay_hour_row_count} "
         f"across {summary.duplicate_stay_hour_group_count} groups"
     )
+    if summary.structural_empty_by_hour:
+        lines.append("Structural empty rows by hour_before (30 = first ICU hour):")
+        for hour, count in summary.structural_empty_by_hour.items():
+            lines.append(f"  hour_before={hour:>2}: {count}")
+    if summary.categorical_value_types:
+        types = ", ".join(
+            f"{column}={kind}" for column, kind in summary.categorical_value_types.items()
+        )
+        lines.append(f"Categorical value types: {types}")
     if summary.stay_positive_count or summary.stay_negative_count:
         lines.append(
             "Stay-level outcomes: "
@@ -240,3 +264,12 @@ def _series_max_int(frame: pd.DataFrame, column: str) -> int | None:
     if column not in frame.columns or frame[column].dropna().empty:
         return None
     return int(frame[column].max())
+
+
+def _value_type(series: pd.Series) -> str:
+    values = series.dropna()
+    if values.empty:
+        return "empty"
+    distinct = int(values.nunique())
+    kind = "numeric" if pd.api.types.is_numeric_dtype(values) else "text"
+    return f"{kind} ({distinct} distinct)"
