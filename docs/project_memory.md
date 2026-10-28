@@ -112,6 +112,11 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   0.766 / 0.745 on fully observed windows; both early-stop at epoch 1; EDA vs
   RF about 0 h. Ethnicity code `1` (9,794 stays) has zero positive stays and is
   the top explanation feature: a cohort artifact.
+- Full 5-fold real run (decision `0015`): all-window AUROC LR 0.910, RF 0.921,
+  LSTM 0.915, GRU 0.917 (`missingness_only` 0.803); on fully observed windows
+  LR 0.723, RF 0.840, LSTM 0.756, GRU 0.753. EDA of the RNNs vs the baselines
+  is about 0 h. All-window thresholds catch ≤ 3% of positives on fully
+  observed windows.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -214,10 +219,16 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   rescores saved predictions on fully observed windows with each model's
   threshold and adds that table to `results.md`.
 
+### Five-Fold Real-Data Run
+
+- Decision `0015`: reference results of the professor-aligned method. Report
+  them only alongside the `missingness_only` and fully observed-window tables.
+
 ### Remaining Work
 
-- Run the full 5-fold pipeline on the real CSV (`python scripts/run_cv.py`),
-  then write the report text.
+- Professor decisions on the follow-ups proposed in decision `0015` (primary
+  evaluation subset, `ethnicity`, onset alignment), then write the report
+  text.
 
 ## Open Questions
 
