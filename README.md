@@ -126,8 +126,16 @@ The 5-fold loop is in `docs/milestones/0005-cross-fold-summary.md`:
 python scripts/summarize_results.py
 ```
 
-Tables go to `outputs/summary/` and figures to `reports/figures/` (both
-git-ignored).
+Tables go to `outputs/summary/` (including `results.md`) and figures to
+`reports/figures/` (both git-ignored).
+
+Explain LSTM/GRU predictions (TimeSHAP-style Shapley values per hour and per
+feature). This needs models saved during training:
+
+```bash
+python scripts/train_rnn.py --save-model --overwrite
+python scripts/explain_rnn.py
+```
 
 ## Planned Milestones
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -127,6 +128,8 @@ class TrainConfig:
 @dataclass(frozen=True)
 class RNNResult(BaselineResult):
     history: tuple[dict[str, float], ...] = ()
+    model: SepsisRNN | None = None
+    encoder: SequenceEncoder | None = None
 
 
 def resolve_device(name: str) -> torch.device:
@@ -271,7 +274,42 @@ def run_rnn(
         early_detection=early_detection_summary(alerts),
         params=params,
         history=tuple(history),
+        model=model,
+        encoder=encoder,
     )
+
+
+def save_rnn(directory: Path, cell: str, model: nn.Module, encoder: SequenceEncoder) -> Path:
+    """Write `<cell>.pt` (state_dict only) and `<cell>_encoder.npz` (plain arrays)."""
+    directory.mkdir(parents=True, exist_ok=True)
+    state = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+    torch.save(state, directory / f"{cell}.pt")
+    arrays = {
+        "numeric_index": encoder.numeric_index,
+        "mean": encoder.mean,
+        "std": encoder.std,
+        "categorical_index": encoder.categorical_index,
+    }
+    arrays.update({f"categories_{i}": values for i, values in enumerate(encoder.categories)})
+    np.savez(directory / f"{cell}_encoder.npz", **arrays)
+    return directory / f"{cell}.pt"
+
+
+def load_rnn(directory: Path, cell: str) -> tuple[SepsisRNN, SequenceEncoder]:
+    """Load a model saved by `save_rnn` without unpickling arbitrary objects."""
+    with np.load(directory / f"{cell}_encoder.npz", allow_pickle=False) as data:
+        categorical_index = data["categorical_index"]
+        encoder = SequenceEncoder(
+            numeric_index=data["numeric_index"],
+            mean=data["mean"],
+            std=data["std"],
+            categorical_index=categorical_index,
+            categories=tuple(data[f"categories_{i}"] for i in range(len(categorical_index))),
+        )
+    model = SepsisRNN(encoder.n_features, cell=cell)
+    state = torch.load(directory / f"{cell}.pt", map_location="cpu", weights_only=True)
+    model.load_state_dict(state)
+    return model.eval(), encoder
 
 
 @torch.no_grad()

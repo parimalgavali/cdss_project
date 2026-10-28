@@ -22,3 +22,4 @@ When a future session makes a meaningful project choice:
 - `0008-baseline-models-and-threshold.md`
 - `0009-rnn-architecture-and-training.md`
 - `0010-cross-fold-summary-and-reliable-horizon.md`
+- `0011-explanations-and-model-persistence.md`

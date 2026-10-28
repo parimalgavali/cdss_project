@@ -6,14 +6,13 @@ _Threat model for security scans and reviews of this repository. Built from the 
 Offline, reproducible research pipeline for early sepsis-onset prediction from ICU hourly time series. Python (pandas, NumPy, scikit-learn, imbalanced-learn, PyTorch planned). Researchers run CLI scripts locally against a MIMIC-derived CSV.
 
 - No network services, no authentication, no web UI, no CI/CD workflows, no infrastructure-as-code (no infrastructure repository identified).
-- Data flow: `data/mimic_sepsis_onset_prediction.csv` -> `scripts/inspect_data.py` / `scripts/preprocess_data.py` -> `src/cdss_project/*` (pandas `read_csv`) -> `data/processed/mimic_sepsis_preprocessed.csv` (`to_csv`) -> `scripts/build_windows.py` -> `data/processed/windows_w6.npz` (`np.savez_compressed`, read back with `np.load(allow_pickle=False)`) -> `scripts/train_baselines.py` (scikit-learn, in-memory models only) -> `outputs/baselines/` CSV/JSON results -> `scripts/train_rnn.py` (PyTorch, in-memory models only; reads baseline `*_stay_alerts.csv`) -> `outputs/rnn/` CSV/JSON results -> `scripts/summarize_results.py` (pandas `read_csv` of per-fold results, matplotlib Agg) -> `outputs/summary/` CSVs and `reports/figures/` PNGs.
-- Planned: model artifacts in `models/` (state_dict loaded with `weights_only=True`).
+- Data flow: `data/mimic_sepsis_onset_prediction.csv` -> `scripts/inspect_data.py` / `scripts/preprocess_data.py` -> `src/cdss_project/*` (pandas `read_csv`) -> `data/processed/mimic_sepsis_preprocessed.csv` (`to_csv`) -> `scripts/build_windows.py` -> `data/processed/windows_w6.npz` (`np.savez_compressed`, read back with `np.load(allow_pickle=False)`) -> `scripts/train_baselines.py` (scikit-learn, in-memory models only) -> `outputs/baselines/` CSV/JSON results -> `scripts/train_rnn.py` (PyTorch; reads baseline `*_stay_alerts.csv`; optional `--save-model` writes state_dict `.pt` + encoder `.npz` to `models/rnn/`) -> `outputs/rnn/` CSV/JSON results -> `scripts/summarize_results.py` (pandas `read_csv` of per-fold results, matplotlib Agg) -> `outputs/summary/` CSVs/`results.md` and `reports/figures/` PNGs. `scripts/explain_rnn.py` loads `models/rnn/` via `torch.load(weights_only=True)` and `np.load(allow_pickle=False)` -> `outputs/explain/` CSVs.
 
 ## Components
 | Name | Covers |
 |---|---|
 | **cli-scripts** | `scripts/` (argparse entry points: `--csv`, `--output`, `--overwrite`, `--n-folds`, `--test-fold`, `--random-state`) |
-| **data-pipeline** | `src/cdss_project/` (data_contract, audit, preprocessing, features, windows, baselines, evaluation, rnn, reporting) |
+| **data-pipeline** | `src/cdss_project/` (data_contract, audit, preprocessing, features, windows, baselines, evaluation, rnn, reporting, explain) |
 | **notebooks** | `notebooks/` (exploration/figures) |
 | **tests** | `tests/`, `pytest.ini` |
 | **repo-hygiene** | `.gitignore`, `requirements.txt`, `docs/`, `AGENTS.md`, committed PDFs |
@@ -42,7 +41,7 @@ Offline, reproducible research pipeline for early sepsis-onset prediction from I
 - `.gitignore` excludes `data/`, `models/`, `outputs/`, `reports/figures/`, venvs, caches and the professor's paper.
 - `AGENTS.md` / decision 0001 forbid committing clinical data or generated artifacts.
 - Preprocessing never overwrites the source CSV; output refuses to overwrite without `--overwrite`.
-- Only pandas CSV parsing and NumPy `.npz` arrays loaded with `allow_pickle=False`; no pickle, eval, subprocess or network calls in current code; fitted baseline and RNN models are never saved or loaded.
+- Only pandas CSV parsing and NumPy `.npz` arrays loaded with `allow_pickle=False`; no pickle, eval, subprocess or network calls in current code; fitted baseline models are never saved; RNN weights are saved only with `--save-model` and loaded only as tensors (`weights_only=True`), never via pickle/joblib.
 - Train-only fitting of imputation statistics (result integrity / leakage).
 
 ## Out of scope / accepted risk
