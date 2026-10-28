@@ -82,7 +82,9 @@ def test_full_pipeline_on_synthetic_data(tmp_path):
     assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
 
     summary = pd.read_csv(outputs / "summary" / "metrics_mean_std.csv")
-    assert set(summary["model"]) == {"logistic_regression", "random_forest", "lstm", "gru"}
+    assert set(summary["model"]) == {
+        "logistic_regression", "random_forest", "missingness_only", "lstm", "gru"
+    }
     assert (outputs / "summary" / "results.md").exists()
     for fold in (0, 1):
         assert json.loads((outputs / "rnn" / f"test_fold_{fold}" / "run_summary.json").read_text())

@@ -22,7 +22,7 @@ from cdss_project.windows import load_windows
 
 DEFAULT_WINDOWS_PATH = Path("data/processed/windows_w6.npz")
 DEFAULT_OUTPUT_DIR = Path("outputs/baselines")
-SHORT_NAMES = {"lr": "logistic_regression", "rf": "random_forest"}
+SHORT_NAMES = {"lr": "logistic_regression", "rf": "random_forest", "miss": "missingness_only"}
 
 
 def parse_args() -> argparse.Namespace:

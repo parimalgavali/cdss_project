@@ -38,7 +38,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model-root", type=Path, default=Path("models"))
     parser.add_argument("--figures-dir", type=Path, default=Path("reports/figures"))
     parser.add_argument("--min-observed-hours", type=int, default=0)
-    parser.add_argument("--baseline-models", nargs="+", default=["lr", "rf"])
+    parser.add_argument("--baseline-models", nargs="+", default=["lr", "rf", "miss"])
     parser.add_argument("--rf-n-estimators", type=int, default=200)
     parser.add_argument("--rnn-models", nargs="+", default=["lstm", "gru"])
     parser.add_argument("--skip-rnn", action="store_true", help="Run the baselines only.")

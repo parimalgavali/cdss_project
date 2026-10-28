@@ -100,6 +100,12 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   overwritten. The generated processed copy has `1,711,200` rows, `57,040`
   stays, no duplicate `stay_id + hour_before` rows, and derived
   `stay_has_sepsis` / `observed_label_count` columns.
+- Missingness shortcut (decision `0013`, real-data check 2026-10-28): positive
+  stays average 3.4 recorded hours vs 16.2 for negative stays; a model on the
+  recorded/padding flags alone reaches stay-level AUROC 0.943 / AUPRC 0.793.
+  Padding is scattered (49,860 stays start and 22,140 end with padding). Fold 0
+  baselines: LR AUROC 0.910 / AUPRC 0.594, RF 0.920 / 0.636, both weakest at
+  horizon 1. Compare every model against `missingness_only`.
 - Very sparse features include `crp`, `fio2`, `bilirubin_total`, `lactate`,
   `po2`, `leukocytes`, `platelet`, and `creatinine`.
 
@@ -190,6 +196,12 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   grows towards hour 1). `tests/test_run_cv.py` runs the whole pipeline on it
   in CI.
 
+### Missingness Control
+
+- Decision `0013`: windows carry `observed_mask`; `missingness_only`
+  (`--models miss`) is a Logistic Regression on those flags and runs by
+  default in `run_cv.py`.
+
 ### Remaining Work
 
 - Run the full 5-fold pipeline on the real CSV (`python scripts/run_cv.py`),
@@ -205,10 +217,9 @@ down to 1 hour, comparing classical baselines with LSTM and GRU models.
   PhysioNet 2019, MIMIC-IV, or another preprocessing pipeline.
 - Decide whether to keep missingness masks as auxiliary features in addition to
   professor-style interpolation, or reserve them for a later sensitivity check.
-- Where does padding sit in the 30-hour sequence? Run
-  `python scripts/inspect_data.py` on the real CSV and read the
-  "Structural empty rows by hour_before" table. If padding concentrates in the
-  early hours, long-horizon windows are mostly imputed and filtering by
-  observed hours should be considered.
+- Padding is scattered, and recorded-hour counts nearly determine the label
+  (decision `0013`). Ask the professor whether the CSV is aligned to onset and
+  whether to restrict the analysis (fully observed windows, or stays with
+  enough recorded hours) for the main results.
 - Confirm whether categorical columns in the real CSV are numeric codes or
   text (the inspection report prints this).
