@@ -16,6 +16,7 @@ python scripts/run_cv.py --skip-rnn                # baselines only (fast first 
 python scripts/run_cv.py --device cuda --explain   # full run, saves models + explanations
 python scripts/run_cv.py --resume                  # skip folds that already finished
 python scripts/run_cv.py --folds 0 --max-epochs 5  # one fold, short training
+python scripts/run_cv.py --alert-persistence 3 --output-root outputs/persist3  # EDA rule variant
 ```
 
 Synthetic data:

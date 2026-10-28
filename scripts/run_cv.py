@@ -46,6 +46,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--device", default=None, help="auto, cpu, cuda, ...")
     parser.add_argument("--target-sensitivity", type=float, default=None)
+    parser.add_argument(
+        "--alert-persistence",
+        type=int,
+        default=1,
+        help="Hours an alert must hold before it counts for EDA (baselines and RNNs).",
+    )
     parser.add_argument("--save-model", action="store_true")
     parser.add_argument(
         "--explain", action="store_true", help="Run explain_rnn.py per fold (implies --save-model)."
@@ -67,6 +73,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error(f"--folds must be in [0, {args.n_folds - 1}], got {bad}")
     if args.explain and args.skip_rnn:
         parser.error("--explain needs the RNN models; drop --skip-rnn")
+    if args.alert_persistence < 1:
+        parser.error("--alert-persistence must be at least 1")
     if args.explain:
         args.save_model = True
     return args
@@ -100,6 +108,7 @@ def fold_commands(args: argparse.Namespace, fold: int) -> list[list[str]]:
             "--models", *args.baseline_models,
             "--rf-n-estimators", str(args.rf_n_estimators),
             *_optional("--target-sensitivity", args.target_sensitivity),
+            "--alert-persistence", str(args.alert_persistence),
             *overwrite,
         ],
     ]
@@ -116,6 +125,7 @@ def fold_commands(args: argparse.Namespace, fold: int) -> list[list[str]]:
                 *_optional("--batch-size", args.batch_size),
                 *_optional("--device", args.device),
                 *_optional("--target-sensitivity", args.target_sensitivity),
+                "--alert-persistence", str(args.alert_persistence),
                 *(["--save-model"] if args.save_model else []),
                 *overwrite,
             ]

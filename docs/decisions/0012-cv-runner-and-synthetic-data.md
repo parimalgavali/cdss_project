@@ -23,6 +23,10 @@ Date: 2026-10-28
   five vitals for positive stays that grows from 0 at `hour_before=30` to
   `signal` SD at `hour_before=1`.
 
+- Amendment (2026-10-28): `--alert-persistence N` is passed to both
+  `train_baselines.py` and `train_rnn.py`, so EDA stays like for like
+  (decision `0008` amendment). Use a separate `--output-root` per N.
+
 ## Rationale
 
 - The 5-fold shell loop was easy to get wrong (forgetting `--test-fold`,
