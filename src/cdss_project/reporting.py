@@ -12,7 +12,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from cdss_project.evaluation import metrics_by_horizon
+
 PLOT_METRICS: tuple[str, ...] = ("auroc", "auprc", "f1", "sensitivity", "specificity")
+COUNT_METRICS: tuple[str, ...] = ("windows", "positives")
 _FOLD_DIR = re.compile(r"test_fold_(\d+)$")
 
 
@@ -25,6 +28,47 @@ def load_fold_tables(result_dirs: Iterable[Path], filename: str) -> pd.DataFrame
             path = fold_dir / filename
             if match and path.exists():
                 frames.append(pd.read_csv(path, dtype={"horizon": str}).assign(fold=int(match[1])))
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
+
+
+def load_observed_subset_metrics(
+    result_dirs: Iterable[Path], min_observed_hours: int
+) -> pd.DataFrame:
+    """Recompute each fold's metrics on windows with at least `min_observed_hours` recorded hours.
+
+    Uses the saved `<model>_predictions.csv.gz` and each model's original threshold, so models
+    trained on all windows are judged only where the recording pattern carries no signal.
+    """
+    frames = []
+    metrics = load_fold_tables(result_dirs, "metrics_by_horizon.csv")
+    if metrics.empty:
+        return metrics
+    for result_dir in result_dirs:
+        for fold_dir in sorted(Path(result_dir).glob("test_fold_*")):
+            match = _FOLD_DIR.search(fold_dir.name)
+            if not match:
+                continue
+            fold = int(match[1])
+            for model in metrics.loc[metrics["fold"] == fold, "model"].unique():
+                path = fold_dir / f"{model}_predictions.csv.gz"
+                if not path.exists():
+                    continue
+                predictions = pd.read_csv(path)
+                if "observed_hours" not in predictions.columns:
+                    continue
+                subset = predictions[predictions["observed_hours"] >= min_observed_hours]
+                if subset.empty:
+                    continue
+                threshold = float(
+                    metrics.loc[(metrics["fold"] == fold) & (metrics["model"] == model), "threshold"]
+                    .iloc[0]
+                )
+                table = metrics_by_horizon(subset, threshold=threshold)
+                table["horizon"] = table["horizon"].astype(str)
+                table.insert(0, "model", model)
+                frames.append(table.assign(fold=fold))
     if not frames:
         return pd.DataFrame()
     return pd.concat(frames, ignore_index=True)
@@ -136,12 +180,12 @@ def markdown_report(
     eda_summary: pd.DataFrame | None = None,
     *,
     figures: Sequence[Path] = (),
+    observed_summary: pd.DataFrame | None = None,
+    observed_reliable: pd.DataFrame | None = None,
+    min_observed_hours: int | None = None,
 ) -> str:
     """Results summary for the written report: overall mean ± std, reliable horizon, EDA."""
     overall = summary[summary["horizon"] == "all"]
-    cell = overall.assign(text=_mean_std(overall["mean"], overall["std"], 3))
-    table = cell.pivot(index="model", columns="metric", values="text")
-    table = table.reindex(index=overall["model"].unique(), columns=list(PLOT_METRICS))
     n_folds = int(overall["n_folds"].max()) if len(overall) else 0
     lines = [
         "# Results summary",
@@ -150,7 +194,7 @@ def markdown_report(
         "",
         "## Overall test-fold metrics (mean ± std)",
         "",
-        _markdown_table(table.reset_index()),
+        _markdown_table(_overall_table(summary)),
         "",
         "## Minimum reliable horizon",
         "",
@@ -166,9 +210,34 @@ def markdown_report(
             "",
             _markdown_table(eda[["model", "reference", "eda_hours", "n_folds"]]),
         ]
+    if observed_summary is not None and len(observed_summary):
+        lines += [
+            "",
+            f"## Windows with at least {min_observed_hours} recorded hours (mean ± std)",
+            "",
+            "Same models and thresholds, scored only on windows whose recorded-hour count is at",
+            "least the cut-off, so the recording pattern cannot separate the classes (decision 0014).",
+            "",
+            _markdown_table(_overall_table(observed_summary)),
+        ]
+        if observed_reliable is not None:
+            lines += ["", "Minimum reliable horizon on these windows:", ""]
+            lines += [_markdown_table(observed_reliable)]
     if figures:
         lines += ["", "## Figures", ""] + [f"- `{path}`" for path in figures]
     return "\n".join(lines) + "\n"
+
+
+def _overall_table(summary: pd.DataFrame) -> pd.DataFrame:
+    overall = summary[summary["horizon"] == "all"]
+    digits = overall["metric"].map(lambda metric: 0 if metric in COUNT_METRICS else 3)
+    texts = [
+        _mean_std(pd.Series([m]), pd.Series([s]), d)[0]
+        for m, s, d in zip(overall["mean"], overall["std"], digits, strict=True)
+    ]
+    table = overall.assign(text=texts).pivot(index="model", columns="metric", values="text")
+    columns = [m for m in (*COUNT_METRICS, *PLOT_METRICS) if m in table.columns]
+    return table.reindex(index=overall["model"].unique(), columns=columns).reset_index()
 
 
 def _mean_std(mean: pd.Series, std: pd.Series, digits: int) -> pd.Series:
