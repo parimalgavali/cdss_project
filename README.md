@@ -90,6 +90,17 @@ and remains ignored by Git. It adds `is_padding`, `stay_has_sepsis`,
 `observed_label_count`, a stratified stay-level `fold`, and `split`
 (`--n-folds`, default 5; `--test-fold`, default 0).
 
+Build 6-hour sliding windows (25 per stay, horizons 25..1) from the processed
+CSV:
+
+```bash
+python scripts/build_windows.py --dry-run
+python scripts/build_windows.py
+```
+
+This writes `data/processed/windows_w6.npz` (git-ignored); load it with
+`cdss_project.windows.load_windows`.
+
 ## Planned Milestones
 
 1. Scaffold, data contract, and validation.
